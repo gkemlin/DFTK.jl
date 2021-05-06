@@ -28,10 +28,10 @@ function compute_partial_density!(ρ, basis, kpt, ψk, occupation)
                                             min_ρ=minimum(real(ρk_real)))
     end
     n_electrons = sum(ρk_real) * basis.dvol
-    if abs(n_electrons - sum(occupation)) > sqrt(eps(T))
-        @warn("Mismatch in number of electrons", sum_ρ=n_electrons,
-              sum_occupation=sum(occupation))
-    end
+    #  if abs(n_electrons - sum(occupation)) > sqrt(eps(T))
+    #      @warn("Mismatch in number of electrons", sum_ρ=n_electrons,
+    #            sum_occupation=sum(occupation))
+    #  end
 
     # FFT and return
     r_to_G!(ρ, basis, ρk_real)
