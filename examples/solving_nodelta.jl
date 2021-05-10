@@ -20,7 +20,7 @@ function cardan(b)
     v1 + v2
 end
 
-function u(x)
+function u0(x)
     cardan(A*sin(x))
 end
 

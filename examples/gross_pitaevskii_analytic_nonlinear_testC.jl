@@ -13,7 +13,7 @@ V(r) = 1
 a = 2π
 lattice = a * [[1 0 0.]; [0 0 0]; [0 0 0]]
 
-C = 1
+C_list = [0, 1/200, 1/20, 1/2, 5, 50]
 α = 2
 
 n_electrons = 1  # Increase this for fun
@@ -22,7 +22,7 @@ A = 10
 f(r) = A * sin(r)
 source_term = ExternalFromReal(r -> f(r[1]))
 
-ε_list = [0.01, 1]
+ε = 1
 x = nothing
 basis = nothing
 
@@ -34,10 +34,10 @@ end
 # cut function
 seuil(x) = abs(x) < 1e-8 ? zero(x) : x
 
-for ε in ε_list
+for C in C_list
 
     println("---------------------------------")
-    println("ε = $(ε)")
+    println("C = $(2*C)")
     terms = [Kinetic(2*ε),
              ExternalFromReal(r -> V(r[1])),
              PowerNonlinearity(C, α),
@@ -45,7 +45,7 @@ for ε in ε_list
     model = Model(lattice; n_electrons=n_electrons, terms=terms,
                   spin_polarization=:spinless)  # use "spinless electrons"
 
-    Ecut = 1000
+    Ecut = 40000
     tol = 1e-12
     global basis
     basis = PlaneWaveBasis(model, Ecut, kgrid=(1, 1, 1))
@@ -60,7 +60,7 @@ for ε in ε_list
     ψ = scfres.ψ[1][:, 1];    # first kpoint, all G components, first eigenvector
     Hψ = scfres.ham.blocks[1] * ψ
     Hψr = G_to_r(basis, basis.kpoints[1], Hψ)[:,1,1]
-    println(norm(2*Hψr - source_term(basis).potential[:,1,1]))
+    println("|Hψ-f| = ", norm(Hψr - source_term(basis).potential[:,1,1]))
 
     # Transform the wave function to real space and fix the phase:
     ψr = G_to_r(basis, basis.kpoints[1], ψ)[:, 1, 1]
@@ -69,54 +69,14 @@ for ε in ε_list
     global x
     x = a * vec(first.(DFTK.r_vectors(basis)))
 
-    figure(1)
-    plot(x, real.(2*ψr), label="ε = $(ε)")
+    figure(3)
+    plot(x, real.(ψr), label="C = $(2*C)")
+    legend()
 
-    figure(2)
-    Gs = [abs(G[1]) for G in G_vectors_cart(basis.kpoints[1])][:]
-    semilogy(Gs, seuil.(abs.(ψ)), "o", label="ε = $(ε)")
+    figure(4)
+    Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
+    semilogy(Gs, seuil.(abs.(ψ)), "+", label="C = $(2*C)")
+    legend()
 
-    figure()
-    suptitle("analytical expansion ε = $(ε)")
-    function u(z)
-        φ = zero(ComplexF64)
-        for (iG, G) in  enumerate(G_vectors_cart(basis.kpoints[1]))
-            φ += 2 * seuil(ψ[iG]) * e(G, z, basis)
-        end
-        return φ
-    end
-    rs = range(-π, π, length=500)
-    is = range(-2, 2, length=500)
-    plot_complex_function(rs, is, z->u(z))
 end
-
-include("solving_nodelta.jl")
-
-figure(1)
-title("u_ε on [0, 2π]")
-plot(x, u.(x), "r--", label="ε = 0")
-plot(x, f.(x), "k--", label="f")
-legend()
-
-figure(2)
-ur = ExternalFromReal(r->u(r[1]))
-uG = r_to_G(basis, basis.kpoints[1], ComplexF64.(ur(basis).potential))[:,1]
-Gs = [abs(G[1]) for G in G_vectors_cart(basis.kpoints[1])][:]
-semilogy(Gs, seuil.(abs.(uG)), "o", label="ε = 0")
-
-# plot different w_G(B)
-B_list = 1:0.2:2
-for B in B_list
-    ref_B = [G[1] == 0 ? zero(G[1]) : 1 / sqrt(w(G[1],B))
-             for G in G_vectors_cart(basis.kpoints[1])] # ref slope in Fourier
-    semilogy(Gs, seuil.(abs.(ref_B)), "x-", label="1 / (√w_B(k)) B = $(B)")
-end
-xlabel("k")
-legend()
-
-figure()
-suptitle("analytical expansion ε = 0")
-rs = range(-π, π, length=500)
-is = range(-2, 2, length=500)
-plot_complex_function(rs, is, z->u(z))
 

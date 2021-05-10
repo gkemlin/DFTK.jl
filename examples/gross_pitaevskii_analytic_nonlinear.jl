@@ -6,7 +6,7 @@ using Random
 
 Random.seed!(1234)
 
-Ecut = 2000
+Ecut = 5000
 
 Gcartmax = Int(ceil(sqrt(Ecut)*10))
 rand_coef = [rand() for G in 1:Gcartmax]

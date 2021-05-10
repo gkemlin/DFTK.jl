@@ -55,6 +55,7 @@ function precondprep!(P::DMPreconditioner, x)
     x_unpack = P.unpack(x)
     for ik = 1:P.Nk
         precondprep!(P.Pks[ik], x_unpack[ik])
+        P.Pks[ik].mean_kin = [1]
     end
     P
 end
@@ -214,12 +215,12 @@ function custom_direct_minimization(basis::PlaneWaveBasis{T}, source_term;
                 G[ik] .*= 2*filled_occ
                 fG = r_to_G(basis, basis.kpoints[ik],
                             ComplexF64.(source_term(basis).potential))
-                G[ik] .-= filled_occ * fG
+                G[ik] .-= filled_occ * 2 * fG
             end
         end
 
-        # add source_term, which is -(f^*ψ + fψ^*) as N=1
-        E = energies.total - real(sum(f .* ψr) * basis.dvol)
+        # add source_term
+        E = energies.total - 2 * real(sum(f .* ψr) * basis.dvol)
     end
 
     manif = DMManifold(Nk, unpack)
@@ -232,8 +233,9 @@ function custom_direct_minimization(basis::PlaneWaveBasis{T}, source_term;
                                   g_tol = tol, kwdict...)
     res = Optim.optimize(Optim.only_fg!(fg!), pack(ψ0),
                          optim_solver(P=P, precondprep=precondprep!,
-                                      linesearch=LineSearches.BackTracking()),
+                                      linesearch=LineSearches.HagerZhang()),
                          optim_options)
+    display(res)
     ψ = unpack(res.minimizer)
 
     # Final Rayleigh-Ritz (not strictly necessary, but sometimes useful)
