@@ -99,7 +99,7 @@ for ε in ε_list
     model = Model(lattice; n_electrons=n_electrons, terms=terms,
                   spin_polarization=:spinless)  # use "spinless electrons"
 
-    Ecut = 200000
+    Ecut = 500000
     tol = 1e-12
     global basis
     basis = PlaneWaveBasis(model, Ecut, kgrid=(1, 1, 1))
@@ -143,62 +143,26 @@ for ε in ε_list
         subplot(121)
         plot(x, real.(ψr), label="\$ \\varepsilon = $(ε) \$")
         figure(2)
+        subplot(122)
         Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
         semilogy(Gs, (seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
     end
 
-    #  # compute slope
-    #  ψ_slope = []
-    #  G_slope = []
-    #  for (iG, G) in enumerate(G_vectors(basis.kpoints[1]))
-    #      if abs(ψ[iG]) > 1e-8 && abs(ψ[iG]) < 1e-6
-    #          append!(ψ_slope, abs(ψ[iG]))
-    #          append!(G_slope, abs(G[1]))
-    #      end
-    #  end
-    #  _, Bε = -[ones(length(G_slope)) Float64.(G_slope)] \ log.(ψ_slope)
-    #  ref_Bε = [1 / sqrt(1000000*w(G[1],Bε)) for G in G_vectors(basis.kpoints[1])] # ref slope in Fourier
-    #  plot(Gs, log.(seuil.(abs.(ref_Bε))), "r-", label="1 / (√w_B(k)) B = $(Bε)")
-
-
     if ε >= 0.0001
-        figure(2)
         function u(z)
             φ = zero(ComplexF64)
             for (iG, G) in  enumerate(G_vectors(basis.kpoints[1]))
-                φ += ψ[iG] * e(G, z, basis)
+                φ += seuil(ψ[iG]) * e(G, z, basis)
             end
             return φ
         end
-
-       subplot(121)
+        figure(2)
+        subplot(121)
+        is = range(-0.1, 0.1, length=200)
+        plot(is, imag.(u.(is .* im)), label="\$ {\\rm Im}(u_\\varepsilon({\\rm i} y))\\ \\varepsilon = $(ε) \$")
     end
 
-    #  figure(3)
-    #  is = range(-0.5, 0.5, length=10001)
-    #  ux = abs.(u.(is .* 1im))
-    #  plot(is, ux , label="ε = $(ε)")
-    #  plot([Bε, Bε], [maximum(ux), minimum(ux)] , "r-")
-
-    #  figure(4)
-    #  is = range(-0.5, 0.5, length=1000)
-    #  plot(is, abs.(u.(1 .+ is .* 1im)), label="ε = $(ε)")
-
-    #  figure()
-    #  suptitle("analytical expansion ε = $(ε)")
-    #  rs = range(-π, π, length=500)
-    #  is = range(-2, 2, length=500)
-    #  plot_complex_function(rs, is, z->u(z))
 end
-
-#  # plot norms
-#  figure(3)
-#  loglog(ε_list, L2norm, "x-", label="L2 norm")
-#  loglog(ε_list, H1norm, "x-", label="H1 norm")
-#  loglog(ε_list, H11norm, "x-", label="H1.1 norm")
-#  loglog(ε_list, H2norm, "x-", label="H2 norm")
-#  legend()
-#  xlabel("ε")
 
 ## tests
 figure(1)
@@ -224,44 +188,8 @@ xlim(-15, 315)
 xlabel("\$ |k| \$", size = ftsize)
 legend()
 
-# plot different w_G(B)
-#  B_list = 1:0.2:2
-#  for B in B_list
-#      ref_B = [G[1] == 0 ? zero(G[1]) : 1 / sqrt(w(G[1],B))
-#               for G in G_vectors(basis.kpoints[1])] # ref slope in Fourier
-#      plot(Gs, log.(seuil.(abs.(ref_B))), "x-", label="1 / (√w_B(k)) B = $(B)")
-#  end
-#  xlabel("k")
-#  legend()
-
-#  figure()
-#  suptitle("analytical expansion ε = 0")
-#  rs = range(-π, π, length=500)
-#  is = range(-2, 2, length=500)
-#  plot_complex_function(rs, is, z->u0(z))
-
-#  function uu(z)
-#      φ = zero(ComplexF64)
-#      for (iG, G) in  enumerate(G_vectors(basis.kpoints[1]))
-#          φ += u0G[iG] * e(G, z, basis)
-#      end
-#      return φ
-#  end
-
-#  figure(3)
-#  is = range(-0.5, 0.5, length=10001)
-#  ux = abs.(u0.(is .* 1im))
-#  uux = abs.(uu.(is .* 1im))
-#  plot(is, ux , label="ε = 0 cardan")
-#  plot(is, uux , label="ε = 0 cardan G")
-#  plot([B, B], [maximum(ux), minimum(ux)] , "k-")
-#  ylim(top=2, bottom=-0.5)
-#  legend()
-
-#  figure(4)
-#  is = range(-0.1, 0.1, length=1000)
-#  ux = abs.(u0.(1 .+ is .* 1im))
-#  plot(is, ux , label="ε = 0")
-#  plot([B, B], [maximum(ux), minimum(ux)] , "k-")
-#  legend()
-
+figure(2)
+subplot(121)
+is = range(-0.1, 0.1, length=200)
+plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
+legend()
