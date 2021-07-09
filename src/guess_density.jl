@@ -1,3 +1,20 @@
+
+"""
+Generate a physically valid random density integrating to the given number of electrons.
+"""
+function random_density(basis::PlaneWaveBasis; n_electrons=basis.model.n_electrons)
+    T = eltype(basis)
+    ρtot  = rand(T, basis.fft_size)
+    ρtot  = ρtot .* n_electrons ./ (sum(ρtot) * basis.dvol)  # Integration to n_electrons
+    ρspin = nothing
+    if basis.model.n_spin_components > 1
+        ρspin = rand((-1, 1), basis.fft_size ) .* rand(T, basis.fft_size) .* ρtot
+        @assert all(abs.(ρspin) .≤ ρtot)
+    end
+    ρ_from_total_and_spin(ρtot, ρspin)
+end
+
+
 @doc raw"""
     guess_density(basis, magnetic_moments)
 
@@ -60,6 +77,10 @@ function _guess_spin_density(basis::PlaneWaveBasis{T}, atoms, magnetic_moments) 
             iszero(magmom) && continue
             iszero(magmom[1:2]) || error("Non-collinear magnetization not yet implemented")
 
+            magmom[3] ≤ n_elec_valence(spec) || error(
+                "Magnetic moment $(magmom[3]) too large for element $(spec.symbol) with " *
+                "only $(n_elec_valence(spec)) valence electrons."
+            )
             push!(gaussians, (magmom[3], atom_decay_length(spec), r))
         end
     end
