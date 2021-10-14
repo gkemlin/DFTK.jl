@@ -47,7 +47,7 @@ f(r) = A * sin(r)
 source_term = ExternalFromReal(r -> f(r[1]))
 
 #  ε_list = [1e-16, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 0.01, 0.1, 1]
-ε_list = [1e-8, 1e-7, 1e-6, 1e-5, 0.0001, 0.001, 0.01, 0.1, 1]
+ε_list = [0, 1e-5, 0.0001, 0.001, 0.01, 0.1, 1]
 #  ε_list = [0]
 x = nothing
 basis = nothing
@@ -58,7 +58,7 @@ function e(G, z, basis)
 end
 
 # cut function
-seuil(x) = abs(x) < 1e-8 ? zero(x) : x
+seuil(x) = abs(x) < 1e-9 ? zero(x) : x
 
 # L^2 and H^s norms
 function norm_L2(basis, u)
@@ -99,8 +99,8 @@ for ε in ε_list
     model = Model(lattice; n_electrons=n_electrons, terms=terms,
                   spin_polarization=:spinless)  # use "spinless electrons"
 
-    Ecut = 500000
-    tol = 1e-12
+    Ecut = 1000000
+    tol = 1e-15
     global basis
     basis = PlaneWaveBasis(model, Ecut, kgrid=(1, 1, 1))
     scfres = DFTK.custom_direct_minimization(basis, source_term; tol=tol)
@@ -138,17 +138,14 @@ for ε in ε_list
     x = a * vec(first.(DFTK.r_vectors(basis)))
     ψr = G_to_r(basis, basis.kpoints[1], ψ)[:, 1, 1]
 
-    if ε >= 0.0001
+    if ε >= -1
         figure(1)
         subplot(121)
         plot(x, real.(ψr), label="\$ \\varepsilon = $(ε) \$")
-        figure(2)
+        figure(3)
         subplot(122)
         Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
         semilogy(Gs, (seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
-    end
-
-    if ε >= 0.0001
         function u(z)
             φ = zero(ComplexF64)
             for (iG, G) in  enumerate(G_vectors(basis.kpoints[1]))
@@ -156,7 +153,7 @@ for ε in ε_list
             end
             return φ
         end
-        figure(2)
+        figure(3)
         subplot(121)
         is = range(-0.1, 0.1, length=200)
         plot(is, imag.(u.(is .* im)), label="\$ {\\rm Im}(u_\\varepsilon({\\rm i} y))\\ \\varepsilon = $(ε) \$")
@@ -180,7 +177,7 @@ loglog(ε_list, cvg_H2norm, "x-", label="\$ ||u_0-u_\\varepsilon||_{{\\rm H}^2_\
 legend()
 xlabel("\$ \\varepsilon \$", size=ftsize)
 
-figure(2)
+figure(3)
 subplot(122)
 Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
 semilogy(Gs, (seuil.(abs.(u0G))), "+", label="\$ \\varepsilon = 0 \$")
@@ -188,8 +185,35 @@ xlim(-15, 315)
 xlabel("\$ |k| \$", size = ftsize)
 legend()
 
+figure(3)
+subplot(121)
+is = range(-0.1, 0.1, length=1000)
+ylim(-1,1)
+plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
+plot(is, [1/√3 for i in is], "k--")
+plot(is, [-1/√3 for i in is], "k--")
+B = imag(asin(√(4/27)/A * 1im))
+plot([B,B], [-0.8, 0.8], "r--")
+plot([-B,-B], [-0.8, 0.8], "r--")
+legend(loc="lower right")
+
 figure(2)
 subplot(121)
-is = range(-0.1, 0.1, length=200)
+is = range(-1, 1, length=1000)
 plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
+plot(is, [1/√3 for i in is], label="\$ \\frac{1}{\\sqrt{3}}\$" )
+plot(is, [-1/√3 for i in is], label="\$ - \\frac{1}{\\sqrt{3}}\$" )
+plot(is, [1 for i in is], label="\$ 1 \$" )
+plot(is, [-1 for i in is], label="\$ - 1 \$" )
+legend()
+
+figure(2)
+subplot(122)
+is = range(-0.1, 0.1, length=1000)
+plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
+plot(is, [1/√3 for i in is], "k--")
+plot(is, [-1/√3 for i in is], "k--")
+B = imag(asin(√(4/27)/A * 1im))
+plot([B,B], [-0.8, 0.8], "r--")
+plot([-B,-B], [-0.8, 0.8], "r--")
 legend()
