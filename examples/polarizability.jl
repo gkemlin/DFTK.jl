@@ -24,29 +24,29 @@ lattice = a * I(3)  # cube of ``a`` bohrs
 He = ElementPsp(:He, psp=load_psp("hgh/lda/He-q2"))
 atoms = [He => [[1/2; 1/2; 1/2]]]  # Helium at the center of the box
 
-kgrid = [1, 1, 1]  # no kpoint sampling for an isolated system
+kgrid = [1, 1, 1]  # no k-point sampling for an isolated system
 Ecut = 30
 tol = 1e-8
 
 ## dipole moment of a given density (assuming the current geometry)
 function dipole(basis, ρ)
     rr = [a * (r[1] - 1/2) for r in r_vectors(basis)]
-    d = sum(rr .* ρ) * basis.dvol
+    sum(rr .* ρ) * basis.dvol
 end;
 
-# ## Polarizability by finite differences
+# ## Using finite differences
 # We first compute the polarizability by finite differences.
 # First compute the dipole moment at rest:
 model = model_LDA(lattice, atoms; symmetries=false)
-basis = PlaneWaveBasis(model, Ecut; kgrid=kgrid)
-res = self_consistent_field(basis, tol=tol)
-μref = dipole(basis, res.ρ)
+basis = PlaneWaveBasis(model; Ecut, kgrid)
+res   = self_consistent_field(basis, tol=tol)
+μref  = dipole(basis, res.ρ)
 
 # Then in a small uniform field:
 ε = .01
 model_ε = model_LDA(lattice, atoms; extra_terms=[ExternalFromReal(r -> -ε * (r[1] - a/2))],
                     symmetries=false)
-basis_ε = PlaneWaveBasis(model_ε, Ecut; kgrid=kgrid)
+basis_ε = PlaneWaveBasis(model_ε; Ecut, kgrid)
 res_ε = self_consistent_field(basis_ε, tol=tol)
 με = dipole(basis_ε, res_ε.ρ)
 
@@ -61,7 +61,7 @@ println("Polarizability :   $polarizability")
 # For example [DOI 10.1039/C8CP03569E](https://doi.org/10.1039/C8CP03569E)
 # quotes **1.65** with LSDA and **1.38** with CCSD(T).
 
-# ## Polarizability by linear response
+# ## Using linear response
 # Now we use linear response to compute this analytically; we refer to standard
 # textbooks for the formalism. In the following, ``\chi_0`` is the
 # independent-particle polarizability, and ``K`` the

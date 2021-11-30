@@ -12,7 +12,7 @@ atoms = [Si => [ones(3)/8, -ones(3)/8]]
 model = model_LDA(lattice, atoms)
 kgrid = [4, 4, 4]
 Ecut = 15
-basis = PlaneWaveBasis(model, Ecut; kgrid=kgrid)
+basis = PlaneWaveBasis(model; Ecut, kgrid)
 scfres = self_consistent_field(basis, tol=1e-8);
 ```
 
@@ -94,7 +94,7 @@ of `PlaneWaveBasis`, the latter is controlled by the
 cutoff energy parameter `Ecut`:
 
 ```@example data_structures
-PlaneWaveBasis(model, Ecut; kgrid=kgrid)
+PlaneWaveBasis(model; Ecut, kgrid)
 ```
 
 The `PlaneWaveBasis` by default uses symmetry to reduce the number of
@@ -194,7 +194,7 @@ collect(r_vectors(basis))[1:4]
 
 ## Accessing Bloch waves and densities
 Wavefunctions are stored in an array `scfres.ψ` as `ψ[ik][iG, iband]` where
-`ik` is the index of the kpoint (in `basis.kpoints`), `iG` is the
+`ik` is the index of the ``k``-point (in `basis.kpoints`), `iG` is the
 index of the plane wave (in `G_vectors(basis.kpoints[ik])`) and
 `iband` is the index of the band.
 Densities are stored in real space, as a 4-dimensional array (the third being the spin component).

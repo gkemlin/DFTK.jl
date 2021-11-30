@@ -17,20 +17,26 @@ end
 Hartree(; scaling_factor=1) = Hartree(scaling_factor)
 (hartree::Hartree)(basis) = TermHartree(basis, hartree.scaling_factor)
 
-struct TermHartree <: Term
+struct TermHartree <: TermNonlinear
     basis::PlaneWaveBasis
     scaling_factor::Real  # scaling factor, absorbed into poisson_green_coeffs
     # Fourier coefficients of the Green's function of the periodic Poisson equation
     poisson_green_coeffs
 end
 function TermHartree(basis::PlaneWaveBasis{T}, scaling_factor) where T
+    model = basis.model
+
     # Solving the Poisson equation ΔV = -4π ρ in Fourier space
     # is multiplying elementwise by 4π / |G|^2.
-    poisson_green_coeffs = 4T(π) ./ [sum(abs2, G)
-                                     for G in G_vectors_cart(basis)]
+    poisson_green_coeffs = 4T(π) ./ [sum(abs2, G) for G in G_vectors_cart(basis)]
+    if !isempty(model.atoms)
+        # Assume positive charge from nuclei is exactly compensated by the electrons
+        sum_charges = sum(length(positions) * charge_ionic(elem)
+                          for (elem, positions) in model.atoms)
+        @assert sum_charges == model.n_electrons
+    end
+    poisson_green_coeffs[1] = 0  # Compensating charge background => Zero DC
 
-    # Zero the DC component (i.e. assume a compensating charge background)
-    poisson_green_coeffs[1] = 0
     TermHartree(basis, scaling_factor, scaling_factor .* poisson_green_coeffs)
 end
 

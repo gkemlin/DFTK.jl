@@ -39,13 +39,7 @@ function PspHgh(Zion, rloc, cloc, rp, h::Vector{Matrix{T}};
 end
 
 
-"""
-    parse_hgh_file(path; identifier="")
-
-Parse an HGH pseudopotential file and construct the PspHgh object.
-If `identifier` is given, this identifier will be set.
-"""
-function parse_hgh_file(path; identifier="")
+function parse_hgh_file(path; identifier=path)
     lines = readlines(path)
     description = lines[1]
 
@@ -113,8 +107,7 @@ function parse_hgh_file(path; identifier="")
         end
     end
 
-    PspHgh(Zion, rloc, cloc, rp, h; identifier=identifier,
-           description=description)
+    PspHgh(Zion, rloc, cloc, rp, h; identifier, description)
 end
 
 @doc raw"""
@@ -182,7 +175,7 @@ and `Q` is a polynomial. This function returns `Q`.
     @assert 0 <= l <= length(psp.rp) - 1
     @assert i > 0
     rp::T = psp.rp[l + 1]
-    common::T = 4T(π)^(5 / T(4)) * sqrt(T(2)^(l + 1) * rp^3)
+    common::T = 4T(π)^(5 / T(4)) * sqrt(T(2^(l + 1)) * rp^3)
 
     # Note: In the (l == 0 && i == 2) case the HGH paper has an error.
     #       The first 8 in equation (8) should not be under the sqrt-sign

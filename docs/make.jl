@@ -15,7 +15,7 @@ BUILDPATH = joinpath(@__DIR__, "build")
 ROOTPATH  = joinpath(@__DIR__, "..")
 CONTINUOUS_INTEGRATION = get(ENV, "CI", nothing) == "true"
 DFTKREV   = LibGit2.head(ROOTPATH)
-DFTKREPO  = "https://github.com/JuliaMolSim/DFTK.jl.git"
+DFTKREPO  = "github.com/JuliaMolSim/DFTK.jl.git"
 
 # Python and Julia dependencies needed for running the notebooks
 PYDEPS = ["ase", "pymatgen"]
@@ -107,6 +107,7 @@ makedocs(
             "Tutorial" => "guide/tutorial.md",
             "guide/input_output.md",
             "guide/parallelization.md",
+            "Introduction to periodic problems" => "guide/periodic_problems.md",
             "Density-functional theory" => "guide/density_functional_theory.md",
         ],
         "Examples" => EXAMPLES,
@@ -141,7 +142,7 @@ if CONTINUOUS_INTEGRATION
 
         # Install Julia dependencies into build
         Pkg.activate(".")
-        Pkg.add(Pkg.PackageSpec(url=DFTKREPO, rev=DFTKREV))
+        Pkg.add(Pkg.PackageSpec(url="https://" * DFTKREPO, rev=DFTKREV))
         cp(joinpath(@__DIR__, "Project.toml"), joinpath(BUILDPATH, "Project.toml"), force=true)
     end
     Pkg.activate(@__DIR__)  # Back to Literate / Documenter environment

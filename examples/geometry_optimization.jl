@@ -8,7 +8,7 @@ using Optim
 using LinearAlgebra
 using Printf
 
-kgrid = [1, 1, 1]       # k-Point grid
+kgrid = [1, 1, 1]       # k-point grid
 Ecut = 5                # kinetic energy cutoff in Hartree
 tol = 1e-8              # tolerance for the optimization routine
 a = 10                  # lattice constant in Bohr
@@ -33,7 +33,7 @@ H = ElementPsp(:H, psp=load_psp("hgh/lda/h-q1"));
 function compute_scfres(x)
     atoms = [H => [x[1:3], x[4:6]]]
     model = model_LDA(lattice, atoms)
-    basis = PlaneWaveBasis(model, Ecut; kgrid=kgrid)
+    basis = PlaneWaveBasis(model; Ecut, kgrid)
     global ψ, ρ
     if ρ === nothing
         ρ = guess_density(basis)

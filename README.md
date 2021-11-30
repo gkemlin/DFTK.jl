@@ -2,9 +2,9 @@
 
 # Density-functional toolkit
 
-| **Documentation**                                                                   | **Build Status**                                |  **License**                     |
-|:----------------------------------------------------------------------------------- |:----------------------------------------------- |:-------------------------------- |
-| [![][docs-img]][docs-url] [![][ddocs-img]][ddocs-url] [![][gitter-img]][gitter-url] | [![][ci-img]][ci-url] [![][ccov-img]][ccov-url] | [![][license-img]][license-url]  |
+| **Documentation**                                                                 | **Build Status**                                |  **License**                     |
+|:--------------------------------------------------------------------------------- |:----------------------------------------------- |:-------------------------------- |
+| [![][docs-img]][docs-url] [![][ddocs-img]][ddocs-url] [![][slack-img]][slack-url] | [![][ci-img]][ci-url] [![][ccov-img]][ccov-url] | [![][license-img]][license-url]  |
 
 [ddocs-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [ddocs-url]: https://docs.dftk.org/dev
@@ -12,8 +12,8 @@
 [docs-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-url]: https://docs.dftk.org/stable
 
-[gitter-img]: https://badges.gitter.im/DFTK-jl/community.svg
-[gitter-url]: https://gitter.im/DFTK-jl/community
+[slack-img]: https://img.shields.io/badge/chat-on_slack-808493.svg?logo=slack
+[slack-url]: https://join.slack.com/t/juliamolsim/shared_invite/zt-tc060co0-HgiKApazzsQzBHDlQ58A7g
 
 [ci-img]: https://github.com/JuliaMolSim/DFTK.jl/workflows/CI/badge.svg?branch=master&event=push
 [ci-url]: https://github.com/JuliaMolSim/DFTK.jl/actions
@@ -34,7 +34,7 @@ production codes such as [Abinit](https://www.abinit.org/),
 The unique feature of this code is its emphasis on simplicity and flexibility
 with the goal of facilitating methodological development and
 interdisciplinary collaboration.
-In about 5k lines of pure Julia code we already support a
+In about 7k lines of pure Julia code we already support a
 [sizeable set of features](https://juliamolsim.github.io/DFTK.jl/dev/index.html#package-features-1),
 after just about two years of development.
 Our performance is of the same order of magnitude as established packages.
@@ -52,7 +52,8 @@ Parts of DFTK have also been discussed in published papers.
 If you use our code as part of your research, teaching or other activities,
 we would be grateful if you cite them as appropriate.
 See the [CITATION.bib](CITATION.bib) in the root of this repo for relevant references.
-As a software DFTK can also be cited via [![DOI](https://zenodo.org/badge/181734238.svg)](https://zenodo.org/badge/latestdoi/181734238).
+The current DFTK reference paper to cite is
+[![DOI](https://img.shields.io/badge/DOI-10.21105/jcon.00069-blue)](https://doi.org/10.21105/jcon.00069).
 
 ## Funding
 This project has received funding from
@@ -76,4 +77,4 @@ on github. If you want to contribute but are unsure where to start, take a look
 at the list of issues tagged [good first issue](https://github.com/JuliaMolSim/DFTK.jl/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 (relatively easy tasks suitable for newcomers) or [help wanted](https://github.com/JuliaMolSim/DFTK.jl/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 (more sizeable but well-defined and isolated).
-Don't hesitate to ask for help, through github, email or the [gitter chat](https://gitter.im/DFTK-jl/community).
+Don't hesitate to ask for help, through github, email or the [JuliaMolSim slack][slack-url].

@@ -68,7 +68,7 @@ function compute_χ0(ham; temperature=ham.basis.model.temperature)
         V = Vs[ik]
         Vr = cat(G_to_r.(Ref(basis), Ref(kpt), eachcol(V))..., dims=4)
         Vr = reshape(Vr, n_fft, N)
-        @showprogress "Computing χ0 for kpoint $ik/$(length(basis.kpoints)) ..." for m = 1:N, n = 1:N
+        @showprogress "Computing χ0 for k-point $ik/$(length(basis.kpoints)) ..." for m = 1:N, n = 1:N
             enred = (E[n] - εF) / temperature
             @assert occ[ik][n] ≈ filled_occ * Smearing.occupation(model.smearing, enred)
             ddiff = Smearing.occupation_divided_difference
@@ -101,6 +101,7 @@ struct FunctionPreconditioner
 end
 LinearAlgebra.ldiv!(y::T, P::FunctionPreconditioner, x) where {T} = P.precondition!(y, x)::T
 LinearAlgebra.ldiv!(P::FunctionPreconditioner, x) = (x .= P.precondition!(similar(x), x))
+precondprep!(P::FunctionPreconditioner, ::Any) = P
 
 # Solves Q (H-εn) Q δψn = -Q rhs
 # where Q is the projector on the orthogonal of ψk
@@ -265,7 +266,7 @@ function apply_χ0(ham, ψ, εF, eigenvalues, δV; kwargs_sternheimer...)
     # could be made to only respect basis.symmetries, but symmetrizing wrt
     # the model symmetry group means that χ0 is unaffected by the
     # use_symmetry kwarg of basis, which is nice)
-    δV = symmetrize(basis, δV) / normδV
+    δV = symmetrize_ρ(basis, δV) / normδV
 
     δHψ = [DFTK.RealSpaceMultiplication(basis, kpt, @views δV[:, :, :, kpt.spin]) * ψ[ik]
            for (ik, kpt) in enumerate(basis.kpoints)]
