@@ -4,6 +4,7 @@ using DoubleFloats
 using GenericLinearAlgebra
 
 ### tool functions for computing the solution of u + u^3 = A*sin(x)
+include("plotting_analytic.jl")
 
 # extend cbrt to complex numbers
 function cbrt_cplx(z)
@@ -26,9 +27,16 @@ end
 
 # u0 is the real solution of u + u^3 = A*sin(x) on [0,2π]
 A = 10
+B = imag(asin(√(4/27)/A * 1im))
 function u0(x)
     cardan(A*sin(x))
 end
+
+figure(5)
+rs = range(-0.005, 0.005, length=500)
+is = range(B-0.01, B+0.01, length=500)
+plot_complex_function(rs, is, z->u0(z))
+plot(0, B, "ro")
 
 ## weighted l2 spaces of analytic functions
 w(G, A) = exp(2*A*abs(G))
@@ -58,7 +66,7 @@ function e(G, z, basis)
 end
 
 # cut function
-seuil(x) = abs(x) < 1e-9 ? zero(x) : x
+seuil(x) = abs(x) < 1e-10 ? zero(x) : x
 
 # L^2 and H^s norms
 function norm_L2(basis, u)
@@ -145,7 +153,18 @@ for ε in ε_list
         figure(3)
         subplot(122)
         Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
+        ψ_nz = []
         semilogy(Gs, (seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
+        figure(4)
+        GGs = Gs[2:div(length(Gs)+1,2)]
+        nG = length(GGs)
+        ψG = [ψ[2*k] for k =1:div(nG,2)]
+        GGGs = [GGs[2*k] for k =1:div(nG,2)]
+        ψGn = ψG[2:end]
+        subplot(121)
+        semilogy(GGGs, (seuil.(abs.(ψG))), "+", label="\$ \\varepsilon = $(ε) \$")
+        subplot(122)
+        plot(GGGs[2:end], log.(abs.( seuil.(ψGn) ./ seuil.(ψG[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
         function u(z)
             φ = zero(ComplexF64)
             for (iG, G) in  enumerate(G_vectors(basis.kpoints[1]))
@@ -158,6 +177,14 @@ for ε in ε_list
         is = range(-0.1, 0.1, length=200)
         plot(is, imag.(u.(is .* im)), label="\$ {\\rm Im}(u_\\varepsilon({\\rm i} y))\\ \\varepsilon = $(ε) \$")
     end
+
+    #  if ε == 1e-5
+    #      figure(6)
+    #      rs = range(-0.05, 0.05, length=500)
+    #      is = range(-0.05, 0.3, length=500)
+    #      plot_complex_function(rs, is, z->u(z))
+    #      plot(0, B, "ro")
+    #  end
 
 end
 
@@ -213,7 +240,12 @@ is = range(-0.1, 0.1, length=1000)
 plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
 plot(is, [1/√3 for i in is], "k--")
 plot(is, [-1/√3 for i in is], "k--")
-B = imag(asin(√(4/27)/A * 1im))
 plot([B,B], [-0.8, 0.8], "r--")
 plot([-B,-B], [-0.8, 0.8], "r--")
+legend()
+
+figure(4)
+subplot(121)
+legend()
+subplot(122)
 legend()
