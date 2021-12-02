@@ -222,7 +222,6 @@ function custom_direct_minimization(basis::PlaneWaveBasis{T}, source_term;
     P = DMPreconditioner(Nk, Pks, unpack)
 
     kwdict = Dict(kwargs)
-    println(tol)
     optim_options = Optim.Options(; allow_f_increases=true, show_trace=false,
                                   g_tol = tol, kwdict...)
     res = Optim.optimize(Optim.only_fg!(fg!), pack(ψ0),

@@ -32,12 +32,6 @@ function u0(x)
     cardan(A*sin(x))
 end
 
-figure(5)
-rs = range(-0.005, 0.005, length=500)
-is = range(B-0.01, B+0.01, length=500)
-plot_complex_function(rs, is, z->u0(z))
-plot(0, B, "ro")
-
 ## weighted l2 spaces of analytic functions
 w(G, A) = exp(2*A*abs(G))
 
@@ -66,7 +60,7 @@ function e(G, z, basis)
 end
 
 # cut function
-seuil(x) = abs(x) < 1e-10 ? zero(x) : x
+seuil(x) = abs(x) < 1e-9 ? zero(x) : x
 
 # L^2 and H^s norms
 function norm_L2(basis, u)
@@ -92,7 +86,7 @@ H11norm = []
 H2norm = []
 
 figure(1)
-ftsize = 20
+ftsize = 30
 rc("font", size=ftsize, serif="Computer Modern")
 rc("text", usetex=true)
 
@@ -110,7 +104,7 @@ for ε in ε_list
     Ecut = 1000000
     tol = 1e-15
     global basis
-    basis = PlaneWaveBasis(model, Ecut, kgrid=(1, 1, 1))
+    basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
     scfres = DFTK.custom_direct_minimization(basis, source_term; tol=tol)
     println(scfres.energies)
 
@@ -150,12 +144,8 @@ for ε in ε_list
         figure(1)
         subplot(121)
         plot(x, real.(ψr), label="\$ \\varepsilon = $(ε) \$")
-        figure(3)
-        subplot(122)
-        Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
-        ψ_nz = []
-        semilogy(Gs, (seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
         figure(4)
+        Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
         GGs = Gs[2:div(length(Gs)+1,2)]
         nG = length(GGs)
         ψG = [ψ[2*k] for k =1:div(nG,2)]
@@ -172,10 +162,11 @@ for ε in ε_list
             end
             return φ
         end
-        figure(3)
+        figure(2)
         subplot(121)
         is = range(-0.1, 0.1, length=200)
-        plot(is, imag.(u.(is .* im)), label="\$ {\\rm Im}(u_\\varepsilon({\\rm i} y))\\ \\varepsilon = $(ε) \$")
+        plot(is, imag.(u.(is .* im)), label="\$ \\varepsilon = $(ε) \$")
+        ylim(-0.85, 0.85)
     end
 
     #  if ε == 1e-5
@@ -204,37 +195,13 @@ loglog(ε_list, cvg_H2norm, "x-", label="\$ ||u_0-u_\\varepsilon||_{{\\rm H}^2_\
 legend()
 xlabel("\$ \\varepsilon \$", size=ftsize)
 
-figure(3)
-subplot(122)
-Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
-semilogy(Gs, (seuil.(abs.(u0G))), "+", label="\$ \\varepsilon = 0 \$")
-xlim(-15, 315)
-xlabel("\$ |k| \$", size = ftsize)
-legend()
-
-figure(3)
+figure(2)
 subplot(121)
 is = range(-0.1, 0.1, length=1000)
-ylim(-1,1)
-plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
-plot(is, [1/√3 for i in is], "k--")
-plot(is, [-1/√3 for i in is], "k--")
-B = imag(asin(√(4/27)/A * 1im))
-plot([B,B], [-0.8, 0.8], "r--")
-plot([-B,-B], [-0.8, 0.8], "r--")
-legend(loc="lower right")
-
-figure(2)
-subplot(121)
-is = range(-1, 1, length=1000)
-plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
-plot(is, [1/√3 for i in is], label="\$ \\frac{1}{\\sqrt{3}}\$" )
-plot(is, [-1/√3 for i in is], label="\$ - \\frac{1}{\\sqrt{3}}\$" )
-plot(is, [1 for i in is], label="\$ 1 \$" )
-plot(is, [-1 for i in is], label="\$ - 1 \$" )
+plot(is, imag.(u0.(is .* im)), label="\$ \\varepsilon = 0 \$")
+xlabel("\$ y \$")
+ylabel("\$ {\\rm Im}(u_0({\\rm i} y)) \$")
 legend()
-
-figure(2)
 subplot(122)
 is = range(-0.1, 0.1, length=1000)
 plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
@@ -242,10 +209,33 @@ plot(is, [1/√3 for i in is], "k--")
 plot(is, [-1/√3 for i in is], "k--")
 plot([B,B], [-0.8, 0.8], "r--")
 plot([-B,-B], [-0.8, 0.8], "r--")
+xlabel("\$ y \$")
 legend()
 
 figure(4)
 subplot(121)
+xlabel("\$ |k| \$")
 legend()
 subplot(122)
+xlabel("\$ |k| \$")
 legend()
+
+figure(5)
+subplot(121)
+is = range(-0.1, 0.1, length=1000)
+plot(is, imag.(u0.(is .* im)), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
+plot(is, [1/√3 for i in is], "k--", label="\$ \\pm 1/\\sqrt{3} \$")
+plot(is, [-1/√3 for i in is], "k--")
+plot([B,B], [-0.8, 0.8], "r--", label="\$ B \$")
+plot([-B,-B], [-0.8, 0.8], "r--")
+xlabel("\$ y \$")
+legend()
+subplot(122)
+rs = range(-0.005, 0.005, length=200)
+is = range(B-0.01, B+0.01, length=200)
+res = [u0(x + im*y) for x in rs, y in is]
+pcolormesh(rs, is, angle.(res)', cmap="hsv")
+plot(0, B, "ro")
+colorbar()
+
+
