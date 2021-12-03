@@ -28,7 +28,7 @@ function u0(x)
 end
 
 #### ε > 0
-ε = 0.01375
+ε = 0.1
 a = 2π
 lattice = a * [[1 0 0.]; [0 0 0]; [0 0 0]]
 C = 1/2
@@ -127,7 +127,7 @@ for t in Lt[2:end]
     append!(LdY2, Y2[2])
 end
 
-w(y, y0, η) = (1 + 2/η + exp((y-y0)/sqrt(ε))) / (1 + 2/η - exp((y-y0)/sqrt(ε)))
+w(y, y0, η) = (1 + 2/η + exp((y-y0)/sqrt(ε/2))) / (1 + 2/η - exp((y-y0)/sqrt(ε/2)))
 
 figure()
 ftsize = 30
@@ -162,7 +162,7 @@ plot(y02 .+ Lt, [w(y, y02, η2) for y in y02 .+ Lt],
 #  plot(Lt, [1/√3 for t in Lt], "--", label="\$ 1/\\sqrt{3} \$")
 #  plot(Lt, [1 for t in Lt], "--", label="\$ 1 \$")
 ylim(-1,10)
-xlim(0,√ε*log(1 + 2/η2)+y02)
+xlim(0,√(ε/2)*log(1 + 2/η2)+y02)
 xlabel("\$ y \$")
 legend(loc="upper left")
 
@@ -180,7 +180,7 @@ plot(y02 .+ Lt, [w(y, y02, η2) for y in y02 .+ Lt],
 #  plot(Lt, [1/√3 for t in Lt], "--", label="\$ 1/\\sqrt{3} \$")
 #  plot(Lt, [1 for t in Lt], "--", label="\$ 1 \$")
 ylim(-1,100)
-xlim(0,√ε*log(1 + 2/η2)+y02)
+xlim(0,√(ε/2)*log(1 + 2/η2)+y02)
 xlabel("\$ y \$")
 legend(loc="upper left")
 
