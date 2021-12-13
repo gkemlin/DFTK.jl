@@ -21,7 +21,7 @@ function cardan(b)
     v1 + v2
 end
 
-A = 10
+A = 0.5
 B = imag(asin(√(4/27)im/A))
 function u0(x)
     cardan(A*sin(x))
@@ -78,23 +78,64 @@ g(X,t,ε) = [X[2]; (X[1]^3 - X[1])/ε]
 #  g(X,t,ε) = [X[2]; (A*sinh(t) - X[1])/ε]
 f(X,t,ε) = [X[2]; (A*sinh(t) + X[1]^3 - X[1])/ε]
 
-T = 15
+T = B+2
 Nt = 100001
 δt = T/(Nt-1)
 Lt = 0:δt:T
 t = 0
 
-X0 = [0.; du(0)]
+X0 = [0.; 0.]
+X0d = [0.; du(0)]
 X = copy(X0)
+Xd = copy(X0d)
 LX = [X0[1]]
+LXd = [X0d[1]]
 LdX = [X0[2]]
+LdXd = [X0d[2]]
 
 for t in Lt[2:end]
-    global X, Y, ε
+    global X, Xd, ε
     X += δt * f(X,t,ε)
     append!(LX, X[1])
     append!(LdX, X[2])
+    Xd += δt * f(Xd,t,ε)
+    append!(LXd, Xd[1])
+    append!(LdXd, Xd[2])
 end
+
+figure()
+ftsize = 30
+rc("font", size=ftsize, serif="Computer Modern")
+rc("text", usetex=true)
+
+figure(2)
+#  subplot(121)
+ψ0 = imag(u0.(Lt .* im))
+plot(Lt, ψ0, label="\$ {\\rm Im}(u_0({\\rm i}y)) \$")
+plot(Lt, LXd, "-", label="\$ \\psi_\\varepsilon(y)\\ \\psi'_\\varepsilon(0) = u_\\varepsilon'(0) \$ ")
+#  plot(Lt, LdXd, "-", label="\$ \\psi'_\\varepsilon(y)\\ \\psi'_\\varepsilon(0) = u_\\varepsilon'(0) \$ ")
+#  plot(Lt, [LdXd[1] for t in Lt], "-", label="\$ u_\\varepsilon'(0) \$ ")
+#  plot(Lt, LX, "-", label="\$ \\psi_\\varepsilon(y)\\ \\psi'_\\varepsilon(0) = 0 \$ ")
+#  plot(Lt, LdX, "-", label="\$ \\psi'_\\varepsilon(y)\\ \\psi'_\\varepsilon(0) = 0 \$ ")
+plot(Lt, 0 .* Lt)
+title("\$ \\varepsilon = $(ε)\\ \\mu = $(A) \$")
+ylim(-0.1,1)
+xlim(0,T)
+xlabel("\$ y \$")
+legend()
+println(prod(ψ0 .≥ LXd))
+
+#  subplot(122)
+#  plot(Lt, imag(u0.(Lt .* im)), label="\$ {\\rm Im}(u_0({\\rm i}y)) \$")
+#  plot(Lt, LXd, "-", label="\$ \\psi_\\varepsilon(y)\\ \\psi'_\\varepsilon(0) = u_\\varepsilon'(0) \$ ")
+#  plot(Lt, LX, "-", label="\$ \\psi_\\varepsilon(y)\\ \\psi'_\\varepsilon(0) = 0 \$ ")
+#  plot(Lt, 0 .* Lt)
+#  title("\$ \\varepsilon = $(ε)\\ \\mu = $(A) \$")
+#  xlabel("\$ y \$")
+#  legend()
+
+
+STOP
 
 # computable lower bound
 yid1 = findfirst(y->y>=2, LX)
@@ -128,11 +169,6 @@ for t in Lt[2:end]
 end
 
 w(y, y0, η) = (1 + 2/η + exp((y-y0)/sqrt(ε/2))) / (1 + 2/η - exp((y-y0)/sqrt(ε/2)))
-
-figure()
-ftsize = 30
-rc("font", size=ftsize, serif="Computer Modern")
-rc("text", usetex=true)
 
 #  subplot(121)
 #  plot(Lt, imag(u0.(Lt .* im)), label="\$ {\\rm Im}(u_0({\\rm i}y)) \$")
@@ -183,9 +219,6 @@ ylim(-1,100)
 xlim(0,√(ε/2)*log(1 + 2/η2)+y02)
 xlabel("\$ y \$")
 legend(loc="upper left")
-
-STOP
-
 
 figure()
 # dev0 = (LY ./ (Y0[2]*Lt))
