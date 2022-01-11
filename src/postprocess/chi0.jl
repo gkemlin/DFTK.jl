@@ -62,7 +62,7 @@ function compute_χ0(ham; temperature=ham.basis.model.temperature)
         spinrange = kpt.spin == 1 ? (1:n_fft) : (n_fft+1:2n_fft)
         χ0σσ = @view χ0[spinrange, spinrange]
 
-        N = length(G_vectors(basis.kpoints[ik]))
+        N = length(G_vectors(basis, basis.kpoints[ik]))
         @assert N < 10_000
         E = Es[ik]
         V = Vs[ik]
@@ -160,7 +160,7 @@ end
 # (H-εn) δψn = - P_{ψ^⟂} δH ψn
 
 # The off-diagonal explicit term needs a careful consideration of stability.
-# Let <ψm|δψn> = αmn <δψm|δH|ψn>. αmn has to satisfy
+# Let <ψm|δψn> = αmn <ψm|δH|ψn>. αmn has to satisfy
 # fn αmn + fm αnm = ratio = (fn-fm)/(εn-εm)   (*)
 # The usual way is to impose orthogonality (=> αmn=-αnm),
 # but this means that αmn = 1/(εm-εn), which is unstable

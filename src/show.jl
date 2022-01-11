@@ -39,7 +39,7 @@ function Base.show(io::IO, ::MIME"text/plain", model::Model)
     println(io)
     for (i, term) in enumerate(model.term_types)
         header = i==1 ? "terms" : ""
-        showfield(io, header, term)
+        showfield(io, header, sprint(show, "text/plain", term))
         i < length(model.term_types) && println(io)
     end
 end
@@ -70,7 +70,7 @@ function Base.show(io::IO, ::MIME"text/plain", basis::PlaneWaveBasis)
     end
     showfieldln(io, "kgrid type", "Monkhorst-Pack")
     showfieldln(io, "kgrid",    basis.kgrid)
-    if !iszero(basis.kshift)
+    if !isnothing(basis.kshift) && !iszero(basis.kshift)
         showfieldln(io, "kshift",   basis.kshift)
     end
     showfieldln(io, "num. irred. kpoints", length(basis.kcoords_global))

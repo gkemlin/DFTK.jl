@@ -1,5 +1,9 @@
 using MPI
 
+# Abstract type for all possible bases that can be used in DFTK. Right now this is just
+# one, but this type helps to resolve method ambiguities while avoiding an uninformative ::Any.
+abstract type AbstractBasis{T <: Real} end
+
 # There are two kinds of plane-wave basis sets used in DFTK.
 # The k-dependent orbitals are discretized on spherical basis sets {G, 1/2 |k+G|^2 ≤ Ecut}.
 # Potentials and densities are expressed on cubic basis sets large enough to contain
@@ -12,43 +16,31 @@ More generally, a ``k``-point is a block of the Hamiltonian;
 eg collinear spin is treated by doubling the number of kpoints.
 """
 struct Kpoint{T <: Real}
-    model::Model{T}               # TODO Should be only lattice/atoms
     spin::Int                     # Spin component can be 1 or 2 as index into what is
                                   # returned by the `spin_components` function
     coordinate::Vec3{T}           # Fractional coordinate of k-point
     coordinate_cart::Vec3{T}      # Cartesian coordinate of k-point
     mapping::Vector{Int}          # Index of G_vectors[i] on the FFT grid:
-                                  # G_vectors(basis)[kpt.mapping[i]] == G_vectors(kpt)[i]
+                                  # G_vectors(basis)[kpt.mapping[i]] == G_vectors(basis, kpt)[i]
     mapping_inv::Dict{Int, Int}   # Inverse of `mapping`:
-                                  # G_vectors(basis)[i] = G_vectors(kpt)[kpt.mapping_inv[i]]
+                                  # G_vectors(basis)[i] == G_vectors(basis, kpt)[mapping_inv[i]]
     G_vectors::Vector{Vec3{Int}}  # Wave vectors in integer coordinates:
                                   # ({G, 1/2 |k+G|^2 ≤ Ecut})
 end
-
-
-"""
-The list of G vectors of a given `basis` or `kpoint`, in reduced coordinates.
-"""
-G_vectors(kpt::Kpoint) = kpt.G_vectors
-
-"""
-The list of G vectors of a given `basis` or `kpoint`, in cartesian coordinates.
-"""
-G_vectors_cart(kpt::Kpoint) = (kpt.model.recip_lattice * G for G in G_vectors(kpt))
 
 @doc raw"""
 A plane-wave discretized `Model`.
 Normalization conventions:
 - Things that are expressed in the G basis are normalized so that if ``x`` is the vector,
-  then the actual function is ``sum_G x_G e_G`` with
-  ``e_G(x) = e^{iG x}/sqrt(unit_cell_volume)``.
+  then the actual function is ``\sum_G x_G e_G`` with
+  ``e_G(x) = e^{iG x} / \sqrt(\Omega)``, where ``\Omega`` is the unit cell volume.
   This is so that, eg ``norm(ψ) = 1`` gives the correct normalization.
   This also holds for the density and the potentials.
 - Quantities expressed on the real-space grid are in actual values.
 
 `G_to_r` and `r_to_G` convert between these representations.
 """
-struct PlaneWaveBasis{T <: Real}
+struct PlaneWaveBasis{T} <: AbstractBasis{T}
     model::Model{T}
 
     ## Global grid information
@@ -137,14 +129,12 @@ Base.eltype(::PlaneWaveBasis{T}) where {T} = T
         mapping_inv = Dict(ifull => iball for (iball, ifull) in enumerate(mapping))
         for iσ = 1:model.n_spin_components
             push!(kpoints_per_spin[iσ],
-                  Kpoint(model,  iσ, k, model.recip_lattice * k,
-                         mapping, mapping_inv, Gvecs_k))
+                  Kpoint(iσ, k, model.recip_lattice * k, mapping, mapping_inv, Gvecs_k))
         end
     end
 
     vcat(kpoints_per_spin...)  # put all spin up first, then all spin down
 end
-
 function build_kpoints(basis::PlaneWaveBasis, kcoords)
     build_kpoints(basis.model, basis.fft_size, kcoords, basis.Ecut;
                   variational=basis.variational)
@@ -152,10 +142,10 @@ end
 
 # Lowest-level constructor. All given parameters must be the same on all processors
 # and are stored in PlaneWaveBasis for easy reconstruction
-@timing function PlaneWaveBasis(model::Model{T},
-                                Ecut::Number, fft_size, variational,
-                                kcoords::AbstractVector, ksymops,
-                                kgrid, kshift, symmetries, comm_kpts) where {T <: Real}
+function PlaneWaveBasis(model::Model{T},
+                        Ecut::Number, fft_size, variational,
+                        kcoords::AbstractVector, ksymops,
+                        kgrid, kshift, symmetries, comm_kpts) where {T <: Real}
     if !(all(fft_size .== next_working_fft_size(T, fft_size)))
         error("Selected fft_size will not work for the buggy generic " *
               "FFT routines; use next_working_fft_size")
@@ -224,13 +214,10 @@ end
     kweights = T.(model.n_spin_components .* kweights) ./ tot_weight
     @assert mpi_sum(sum(kweights), comm_kpts) ≈ model.n_spin_components
 
-    # Create dummy terms array for basis to handle
-    terms = Vector{Any}(undef, length(model.term_types))
-
-    dvol = model.unit_cell_volume ./ prod(fft_size)
-
+    dvol  = model.unit_cell_volume ./ prod(fft_size)
+    terms = Vector{Any}(undef, length(model.term_types))  # Dummy terms array, filled below
     basis = PlaneWaveBasis{T}(
-        model, fft_size, dvol, 
+        model, fft_size, dvol,
         Ecut, variational,
         opFFT, ipFFT, opBFFT, ipBFFT,
         r_to_G_normalization, G_to_r_normalization,
@@ -289,8 +276,8 @@ end
 """
 Creates a new basis identical to `basis`, but with a custom set of kpoints
 """
-function PlaneWaveBasis(basis::PlaneWaveBasis, kcoords::AbstractVector,
-                        ksymops::AbstractVector, symmetries=vcat(ksymops...))
+@timing function PlaneWaveBasis(basis::PlaneWaveBasis, kcoords::AbstractVector,
+                                ksymops::AbstractVector, symmetries=vcat(ksymops...))
     kgrid = kshift = nothing
     PlaneWaveBasis(basis.model, basis.Ecut,
                    basis.fft_size, basis.variational,
@@ -332,35 +319,92 @@ end
 
 
 """
-Return the list of wave vectors (integer coordinates) for the cubic basis set.
+    G_vectors(fft_size::Tuple)
+
+The wave vectors `G` in reduced (integer) coordinates for a cubic basis set
+of given sizes.
 """
-function G_vectors(fft_size)
+function G_vectors(fft_size::Union{Tuple,AbstractVector})
+    # Note that a collect(G_vectors_generator(fft_size)) is 100-fold slower
+    # than this implementation, hence the code duplication.
+    start = .- cld.(fft_size .- 1, 2)
+    stop  = fld.(fft_size .- 1, 2)
+    axes  = [[collect(0:stop[i]); collect(start[i]:-1)] for i in 1:3]
+    [Vec3{Int}(i, j, k) for i in axes[1], j in axes[2], k in axes[3]]
+end
+function G_vectors_generator(fft_size::Union{Tuple,AbstractVector})
+    # The generator version is used mainly in symmetry.jl for lowpass_for_symmetry! and
+    # accumulate_over_symmetries!, which are 100-fold slower with G_vector(fft_size).
     start = .- cld.(fft_size .- 1, 2)
     stop  = fld.(fft_size .- 1, 2)
     axes = [[collect(0:stop[i]); collect(start[i]:-1)] for i in 1:3]
     (Vec3{Int}(i, j, k) for i in axes[1], j in axes[2], k in axes[3])
 end
-G_vectors(basis::PlaneWaveBasis) = G_vectors(basis.fft_size)
 
+@doc raw"""
+    G_vectors(basis::PlaneWaveBasis)
+    G_vectors(basis::PlaneWaveBasis, kpt::Kpoint)
+
+The list of wave vectors ``G`` in reduced (integer) coordinates of a `basis`
+or a ``k``-point `kpt`.
+"""
+G_vectors(basis::PlaneWaveBasis) = G_vectors(basis.fft_size)
+G_vectors(::PlaneWaveBasis, kpt::Kpoint) = kpt.G_vectors
+
+
+@doc raw"""
+    G_vectors_cart(basis::PlaneWaveBasis)
+    G_vectors_cart(basis::PlaneWaveBasis, kpt::Kpoint)
+
+The list of ``G`` vectors of a given `basis` or `kpt`, in cartesian coordinates.
+"""
 function G_vectors_cart(basis::PlaneWaveBasis)
-    (basis.model.recip_lattice * G for G in G_vectors(basis.fft_size))
+    map(G -> basis.model.recip_lattice * G, G_vectors(basis))
+end
+function G_vectors_cart(basis::PlaneWaveBasis, kpt::Kpoint)
+    map(G -> basis.model.recip_lattice * G, G_vectors(basis, kpt))
 end
 
+@doc raw"""
+    Gplusk_vectors(basis::PlaneWaveBasis, kpt::Kpoint)
+
+The list of ``G + k`` vectors, in reduced coordinates.
 """
-Return the list of r vectors, in reduced coordinates. By convention, this is in [0,1)^3.
+function Gplusk_vectors(basis::PlaneWaveBasis, kpt::Kpoint)
+    map(G -> G + kpt.coordinate, G_vectors(basis, kpt))
+end
+
+@doc raw"""
+    Gplusk_vectors_cart(basis::PlaneWaveBasis, kpt::Kpoint)
+
+The list of ``G + k`` vectors, in cartesian coordinates.
+"""
+function Gplusk_vectors_cart(basis::PlaneWaveBasis, kpt::Kpoint)
+    map(Gplusk -> basis.model.recip_lattice * Gplusk, Gplusk_vectors(basis, kpt))
+end
+
+
+@doc raw"""
+    r_vectors(basis::PlaneWaveBasis)
+
+The list of ``r`` vectors, in reduced coordinates. By convention, this is in [0,1)^3.
 """
 function r_vectors(basis::PlaneWaveBasis{T}) where T
     N1, N2, N3 = basis.fft_size
-    (Vec3{T}(T(i-1) / N1, T(j-1) / N2, T(k-1) / N3) for i = 1:N1, j = 1:N2, k = 1:N3)
+    [Vec3{T}(T(i-1) / N1, T(j-1) / N2, T(k-1) / N3) for i = 1:N1, j = 1:N2, k = 1:N3]
 end
+
+@doc raw"""
+    r_vectors_cart(basis::PlaneWaveBasis)
+
+The list of ``r`` vectors, in cartesian coordinates.
 """
-Return the list of r vectors, in cartesian coordinates.
-"""
-r_vectors_cart(basis::PlaneWaveBasis) = (basis.model.lattice * r for r in r_vectors(basis))
+r_vectors_cart(basis::PlaneWaveBasis) = map(r -> basis.model.lattice * r, r_vectors(basis))
+
 
 """
 Return the index tuple `I` such that `G_vectors(basis)[I] == G`
-or the index `i` such that `G_vectors(kpoint)[i] == G`.
+or the index `i` such that `G_vectors(basis, kpoint)[i] == G`.
 Returns nothing if outside the range of valid wave vectors.
 """
 function index_G_vectors(basis::PlaneWaveBasis, G::AbstractVector{T}) where {T <: Integer}

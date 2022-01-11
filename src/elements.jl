@@ -12,7 +12,10 @@ abstract type Element end
 
 """Return the total nuclear charge of an atom type"""
 charge_nuclear(::Element) = 0
-# This is a fallback implementation that should be altered as needed.
+
+"""Chemical symbol corresponding to an element"""
+atomic_symbol(::Element) = :X
+# The preceeding functions are fallback implementations that should be altered as needed.
 
 """Return the total ionic charge of an atom type (nuclear charge - core electrons)"""
 charge_ionic(el::Element) = charge_nuclear(el)
@@ -33,6 +36,9 @@ function local_potential_real(el::Element, q::AbstractVector)
     local_potential_real(el, norm(q))
 end
 
+# Fallback print function:
+Base.show(io::IO, el::Element) = print(io, "$(typeof(el))($(atomic_symbol(el)))")
+
 
 struct ElementCoulomb <: Element
     Z::Int  # Nuclear charge
@@ -40,7 +46,7 @@ struct ElementCoulomb <: Element
 end
 charge_ionic(el::ElementCoulomb)   = el.Z
 charge_nuclear(el::ElementCoulomb) = el.Z
-Base.show(io::IO, el::ElementCoulomb) = print(io, "ElementCoulomb($(el.symbol))")
+atomic_symbol(el::ElementCoulomb)  = el.symbol
 
 """
 Element interacting with electrons via a bare Coulomb potential
@@ -81,6 +87,7 @@ function ElementPsp(key; psp)
 end
 charge_ionic(el::ElementPsp)   = el.psp.Zion
 charge_nuclear(el::ElementPsp) = el.Z
+atomic_symbol(el::ElementPsp)  = el.symbol
 
 function local_potential_fourier(el::ElementPsp, q::T) where {T <: Real}
     q == 0 && return zero(T)  # Compensating charge background
@@ -101,10 +108,7 @@ struct ElementCohenBergstresser <: Element
 end
 charge_ionic(el::ElementCohenBergstresser)   = 2
 charge_nuclear(el::ElementCohenBergstresser) = el.Z
-
-function Base.show(io::IO, el::ElementCohenBergstresser)
-    print(io, "ElementCohenBergstresser($(el.symbol))")
-end
+atomic_symbol(el::ElementCohenBergstresser)  = el.symbol
 
 """
 Element where the interaction with electrons is modelled
