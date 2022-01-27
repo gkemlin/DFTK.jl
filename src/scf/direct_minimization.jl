@@ -166,7 +166,7 @@ function custom_direct_minimization(basis::PlaneWaveBasis{T}, source_term;
     ortho(ψk) = Matrix(qr(ψk).Q)
     Nk = length(basis.kpoints)
 
-    ψ0 = [ortho(randn(Complex{T}, length(G_vectors(kpt)), n_bands))
+    ψ0 = [ortho(randn(Complex{T}, length(G_vectors(basis, kpt)), n_bands))
           for kpt in basis.kpoints]
     ψ0 = [Complex{T}.(real.(G_to_r(basis, basis.kpoints[ik], ψ0[ik][:,1])))
           for ik = 1:Nk]
@@ -191,7 +191,7 @@ function custom_direct_minimization(basis::PlaneWaveBasis{T}, source_term;
     H = nothing
     energies = nothing
     ρ = nothing
-    f = source_term(basis).potential
+    f = source_term(basis).potential_values
 
     # computes energies and gradients
     function fg!(E, G, ψ)
@@ -207,7 +207,7 @@ function custom_direct_minimization(basis::PlaneWaveBasis{T}, source_term;
                 mul!(G[ik], H.blocks[ik], ψ[ik])
                 G[ik] .*= 2*filled_occ
                 fG = r_to_G(basis, basis.kpoints[ik],
-                            ComplexF64.(source_term(basis).potential))
+                            ComplexF64.(source_term(basis).potential_values))
                 G[ik] .-= filled_occ * 2 * fG
             end
         end
