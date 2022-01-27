@@ -64,7 +64,7 @@ seuil(x) = abs(x) < 1e-9 ? zero(x) : x
 ψ = scfres.ψ[1][:, 1];    # first kpoint, all G components, first eigenvector
 function u(z)
     φ = zero(ComplexF64)
-    for (iG, G) in  enumerate(G_vectors(basis.kpoints[1]))
+    for (iG, G) in  enumerate(G_vectors(basis, basis.kpoints[1]))
         φ += seuil(ψ[iG]) * e(G, z, basis)
     end
     return φ

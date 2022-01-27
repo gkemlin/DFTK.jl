@@ -20,14 +20,14 @@ function cardan(b)
     v1 + v2
 end
 
-A = 10
+A = 1
 B = imag(asin(√(4/27)im/A))
 function u0(x)
     cardan(A*sin(x))
 end
 
 #### ε > 0
-ε = 0.01308
+ε = 0.01
 a = 2π
 lattice = a * [[1 0 0.]; [0 0 0]; [0 0 0]]
 C = 1/2
@@ -72,82 +72,78 @@ du(x) = ForwardDiff.derivative(y -> real(u(y)), x)
 
 
 # EDO
-#  g(X,t,ε) = [X[2]; (X[1]^3)/ε]
-g(X,t,ε) = [X[2]; (X[1]^3 - X[1])/ε]
-#  g(X,t,ε) = [X[2]; (A*sinh(t) - X[1])/ε]
-f(X,t,ε) = [X[2]; (A*sinh(t) + X[1]^3 - X[1])/ε]
+f(X,t,ε) = [X[2]; (A*sinh(t) + X[1]^3 - X[1]) / ε]
 
-T = 15
+T = 0.2*B
 Nt = 100001
 δt = T/(Nt-1)
 Lt = 0:δt:T
 t = 0
 
 X0 = [0.; du(0)]
-Y0 = [0.; du(0)]
 X = copy(X0)
-Y = copy(Y0)
 LX = [X0[1]]
 LdX = [X0[2]]
-LY = [Y0[1]]
-LdY = [Y0[2]]
 
 for t in Lt[2:end]
-    global X, Y, ε
+    global X, ε
     X += δt * f(X,t,ε)
-    Y += δt * g(Y,t,ε)
     append!(LX, X[1])
     append!(LdX, X[2])
-    append!(LY, Y[1])
-    append!(LdY, Y[2])
 end
 
-figure()
-ftsize = 30
-rc("font", size=ftsize, serif="Computer Modern")
-rc("text", usetex=true)
+#  figure()
+#  ftsize = 30
+#  rc("font", size=ftsize, serif="Computer Modern")
+#  rc("text", usetex=true)
 
+Lu0 = imag(u0.(Lt .* im))
+#  plot(Lt, Lu0, label="\$ {\\rm Im}(u_0({\\rm i}y)) \$")
+#  plot(Lt, LX, "--", label="\$ \\psi_\\varepsilon(y) \$", markevery=50, ms=10)
+#  plot(Lt, [1/√3 for t in Lt], "--", label="\$ 1/\\sqrt{3} \$")
+#  #  plot(Lt, imag(u.(Lt .* im)), label="\$ {\\rm Im }(u_\\varepsilon({\\rm i}y)) \$")
+#  xlim(0,B)
+#  ylim(0,1)
+#  xlabel("\$ y \$")
+#  #  plot([0, B], [1/√3, 1/√3], "--", label="1/√3")
+#  #  plot([B, B], [0, 1/√3], "--", label="t=B")
+#  #  plot(Lt, Y0[2]*Lt)
+#  #  plot(Lt, Y0[2]*Lt + Y0[2].^3 * 6 ./ factorial(5) .* (Lt).^5)
+#  #  plot(Lt, Y0[2]*Lt + Y0[2].^3 * 6 ./ factorial(5) .* (Lt).^5 + 36 .* Y0[2].^5 ./ factorial(9) .* (Lt).^9 )
+#  legend()
+
+
+figure()
+v = LX .- Lu0
+dv = diff(v)/δt
+suptitle("\$ \\varepsilon = $(ε) \$")
 subplot(121)
-plot(Lt, imag(u0.(Lt .* im)), label="\$ {\\rm Im}(u_0({\\rm i}y)) \$")
-plot(Lt, LX, "+", label="\$ \\psi_\\varepsilon(y) \$", markevery=50, ms=10)
-plot(Lt, LY, "+", label="\$ \\phi_\\varepsilon(y) \$", markevery=50, ms=10)
-plot(Lt, [1/√3 for t in Lt], "--", label="\$ 1/\\sqrt{3} \$")
-plot(Lt, imag(u.(Lt .* im)), label="\$ {\\rm Im }(u_\\varepsilon({\\rm i}y)) \$")
-xlim(0,0.2)
-ylim(0,1)
+plot(Lt, v, label="\$ w_\\varepsilon(y)\$")
 xlabel("\$ y \$")
-#  plot([0, B], [1/√3, 1/√3], "--", label="1/√3")
-#  plot([B, B], [0, 1/√3], "--", label="t=B")
-#  plot(Lt, Y0[2]*Lt)
-#  plot(Lt, Y0[2]*Lt + Y0[2].^3 * 6 ./ factorial(5) .* (Lt).^5)
-#  plot(Lt, Y0[2]*Lt + Y0[2].^3 * 6 ./ factorial(5) .* (Lt).^5 + 36 .* Y0[2].^5 ./ factorial(9) .* (Lt).^9 )
 legend()
-
 subplot(122)
-plot(Lt, imag(u0.(Lt .* im)), label="\$ {\\rm Im}(u_0({\\rm i}y)) \$")
-plot(Lt, LX, "+", label="\$ \\psi_\\varepsilon(y) \$", markevery=50, ms=10)
-plot(Lt, LY, "+", label="\$ \\phi_\\varepsilon(y) \$"; markevery=200, ms=10)
-plot(Lt, [1/√3 for t in Lt], "--", label="\$ 1/\\sqrt{3} \$")
-plot(Lt, [1 for t in Lt], "--", label="\$ 1 \$")
-ylim(-1,10)
-#  xlim(0,7)
+plot(Lt[1:end-1], dv, label="\$ w'_\\varepsilon(y)\$")
 xlabel("\$ y \$")
 legend()
 
-STOP
-
-
 figure()
-# dev0 = (LY ./ (Y0[2]*Lt))
-dev0 = LY
-pol_fit = fit(Lt, dev0, 10)
-plot(Lt, dev0)
-plot(Lt, pol_fit.(Lt))
-
-
-STOP
-
-figure()
-#  plot(Lt, LdX, label="u'(t)")
-plot(Lt, LdY, label="y'(t)")
+plot(v[1:end-1], dv, label="phase")
+xlabel("X")
+ylabel("X'")
 legend()
+
+STOP
+
+#  figure()
+#  subplot(121)
+#  dzf(z) = -1 + 3z^2
+#  dzzf(z) = 6z
+#  dzzzf(z) = 6
+#  E = ε/2 .* dv .- 1/2 .* dzf.(Lu0[1:end-1]).*v[1:end-1].^2 .- 1/6 .*  dzzf.(Lu0[1:end-1]).*v[1:end-1].^3 .- 1/24 .* dzzzf.(Lu0[1:end-1]).*v[1:end-1].^4
+#  plot(Lt[1:end-1], E, label="energy")
+#  xlabel("\$ y \$")
+#  legend()
+#  subplot(122)
+#  plot(Lt[1:end-2], diff(E)/δt, label="d energy")
+#  xlabel("\$ y \$")
+#  legend()
