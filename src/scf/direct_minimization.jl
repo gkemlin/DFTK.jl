@@ -120,7 +120,7 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
     P = DMPreconditioner(Nk, Pks, unpack)
 
     kwdict = Dict(kwargs)
-    optim_options = Optim.Options(; allow_f_increases=true, show_trace=true,
+    optim_options = Optim.Options(; allow_f_increases=true, show_trace=false,
                                   x_tol=pop!(kwdict, :x_tol, tol),
                                   f_tol=pop!(kwdict, :f_tol, -1),
                                   g_tol=pop!(kwdict, :g_tol, -1), kwdict...)

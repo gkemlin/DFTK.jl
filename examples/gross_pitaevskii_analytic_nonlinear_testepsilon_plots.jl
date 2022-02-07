@@ -1,7 +1,6 @@
 using PyPlot
 using DFTK
-using DoubleFloats
-using GenericLinearAlgebra
+using LinearAlgebra
 
 ### tool functions for computing the solution of u + u^3 = A*sin(x)
 include("plotting_analytic.jl")
@@ -64,11 +63,11 @@ seuil(x) = abs(x) < 1e-9 ? zero(x) : x
 
 # L^2 and H^s norms
 function norm_L2(basis, u)
-    Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
+    Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
     return sqrt(sum(seuil.(abs.(u)).^2))
 end
 function norm_Hs(basis, u, s)
-    Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
+    Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
     return sqrt(sum((1 .+ Gs.^2).^s .* seuil.(abs.(u)).^2))
 end
 
@@ -116,11 +115,11 @@ for ε in ε_list
     ψ = scfres.ψ[1][:, 1];    # first kpoint, all G components, first eigenvector
     Hψ = scfres.ham.blocks[1] * ψ
     Hψr = G_to_r(basis, basis.kpoints[1], Hψ)[:,1,1]
-    println("|Hψ-f| = ", norm(Hψr - source_term(basis).potential[:,1,1]))
+    println("|Hψ-f| = ", norm(Hψr - source_term(basis).potential_values[:,1,1]))
 
     global save0, u0G
     if !save0
-        u0G = r_to_G(basis, basis.kpoints[1], ComplexF64.(u0r(basis).potential))[:,1]
+        u0G = r_to_G(basis, basis.kpoints[1], ComplexF64.(u0r(basis).potential_values))[:,1]
         println("|u0-ψ| = ", norm_L2(basis, u0G-ψ))
         println(norm(u0G-ψ))
         save0 = true
@@ -145,7 +144,7 @@ for ε in ε_list
         subplot(121)
         plot(x, real.(ψr), label="\$ \\varepsilon = $(ε) \$")
         figure(4)
-        Gs = [abs(G[1]) for G in G_vectors(basis.kpoints[1])][:]
+        Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
         GGs = Gs[2:div(length(Gs)+1,2)]
         nG = length(GGs)
         ψG = [ψ[2*k] for k =1:div(nG,2)]
@@ -157,7 +156,7 @@ for ε in ε_list
         plot(GGGs[2:end], log.(abs.( seuil.(ψGn) ./ seuil.(ψG[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
         function u(z)
             φ = zero(ComplexF64)
-            for (iG, G) in  enumerate(G_vectors(basis.kpoints[1]))
+            for (iG, G) in  enumerate(G_vectors(basis, basis.kpoints[1]))
                 φ += seuil(ψ[iG]) * e(G, z, basis)
             end
             return φ

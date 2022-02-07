@@ -21,14 +21,14 @@ function cardan(b)
     v1 + v2
 end
 
-A = 0.5
+A = 0.01
 B = imag(asin(√(4/27)im/A))
 function u0(x)
     cardan(A*sin(x))
 end
 
 #### ε > 0
-ε = 0.1
+ε = 0.0001
 a = 2π
 lattice = a * [[1 0 0.]; [0 0 0]; [0 0 0]]
 C = 1/2
@@ -78,8 +78,8 @@ g(X,t,ε) = [X[2]; (X[1]^3 - X[1])/ε]
 #  g(X,t,ε) = [X[2]; (A*sinh(t) - X[1])/ε]
 f(X,t,ε) = [X[2]; (A*sinh(t) + X[1]^3 - X[1])/ε]
 
-T = B+2
-Nt = 100001
+T = B*1.1
+Nt = 1000001
 δt = T/(Nt-1)
 Lt = 0:δt:T
 t = 0
