@@ -10,7 +10,7 @@ a = 2π
 lattice = a * [[1 0 0.]; [0 0 0]; [0 0 0]]
 
 V(r) = cos(r)
-C = 1
+C = 10
 α = 2
 
 n_electrons = 1  # Increase this for fun
@@ -20,7 +20,7 @@ n_electrons = 1  # Increase this for fun
 #  seuil(x) = abs(x) < 1e-12 ? zero(x) : x
 seuil(x) = x
 
-ε = 0.01
+ε = 1
 
 println("---------------------------------")
 println("ε = $(ε)")
@@ -32,7 +32,7 @@ model = Model(Array{Double64}(lattice); n_electrons=n_electrons, terms=terms,
               spin_polarization=:spinless)  # use "spinless electrons"
 
 Ecut = 10000000
-tol = 1e-30
+tol = 1e-28
 basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
 scfres = self_consistent_field(basis; tol=tol, maxiter=200)# is_converged=DFTK.ScfConvergenceDensity(tol))
 println(scfres.energies)
@@ -56,14 +56,14 @@ rc("text", usetex=true)
 Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
 #  GGs = Gs[2:div(length(Gs)+1,2)]
 #  nG = length(GGs)
-#  subplot(121)
+subplot(121)
 semilogy(Gs, (seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
 xlabel("\$ |k| \$")
-#  xlim(0,100)
-#  subplot(122)
-#  plot(Gs[1:end-1], log.(abs.( seuil.(ψ[2:end]) ./ seuil.(ψ[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
-#  xlabel("\$ k \$")
-#  xlim(0,500)
+xlim(0,20)
+subplot(122)
+plot(Gs[1:end-1], log.(abs.( seuil.(ψ[2:end]) ./ seuil.(ψ[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
+xlabel("\$ k \$")
+xlim(0,20)
 
 figure(2)
 plot(x, abs2.(ψr))
