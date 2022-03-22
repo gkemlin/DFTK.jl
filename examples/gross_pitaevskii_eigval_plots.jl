@@ -20,52 +20,64 @@ n_electrons = 1  # Increase this for fun
 #  seuil(x) = abs(x) < 1e-12 ? zero(x) : x
 seuil(x) = x
 
+#  for ε in [1]
+
 ε = 1
+    println("---------------------------------")
+    println("ε = $(ε)")
+    terms = [Kinetic(2*ε),
+             ExternalFromReal(r -> V(r[1])),
+             PowerNonlinearity(C, α),
+            ]
+    model = Model(Array{Double64}(lattice); n_electrons=n_electrons, terms=terms,
+                  spin_polarization=:spinless)  # use "spinless electrons"
 
-println("---------------------------------")
-println("ε = $(ε)")
-terms = [Kinetic(2*ε),
-         ExternalFromReal(r -> V(r[1])),
-         PowerNonlinearity(C, α),
-        ]
-model = Model(Array{Double64}(lattice); n_electrons=n_electrons, terms=terms,
-              spin_polarization=:spinless)  # use "spinless electrons"
+    Ecut = 10000000
+    tol = 1e-28
+    basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
+    scfres = self_consistent_field(basis; tol=tol, maxiter=200)# is_converged=DFTK.ScfConvergenceDensity(tol))
+    println(scfres.energies)
 
-Ecut = 10000000
-tol = 1e-28
-basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
-scfres = self_consistent_field(basis; tol=tol, maxiter=200)# is_converged=DFTK.ScfConvergenceDensity(tol))
-println(scfres.energies)
+    # ## Internals
+    # We use the opportunity to explore some of DFTK internals.
+    #
+    # Extract the converged density and the obtained wave function:
+    ψ = scfres.ψ[1][:, 1];    # first kpoint, all G components, first eigenvector
+    Hψ = scfres.ham.blocks[1] * ψ
+    println("|Hψ-λψ| = ", norm(Hψ - scfres.eigenvalues[1][1].*ψ))
 
-# ## Internals
-# We use the opportunity to explore some of DFTK internals.
-#
-# Extract the converged density and the obtained wave function:
-ψ = scfres.ψ[1][:, 1];    # first kpoint, all G components, first eigenvector
-Hψ = scfres.ham.blocks[1] * ψ
-println("|Hψ-εψ| = ", norm(Hψ - scfres.eigenvalues[1][1].*ψ))
+    # plots
+    x = a * vec(first.(DFTK.r_vectors(basis)))
+    ψr = G_to_r(basis, basis.kpoints[1], ψ)[:, 1, 1]
 
-# plots
-x = a * vec(first.(DFTK.r_vectors(basis)))
-ψr = G_to_r(basis, basis.kpoints[1], ψ)[:, 1, 1]
+    figure(1)
+    ftsize = 20
+    rc("font", size=ftsize, serif="Computer Modern")
+    rc("text", usetex=true)
+    Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
+    nG = length(Gs)
+    nG2 = div(nG,2) - 1
+    ψ2kp1 = [ψ[2k+1] for k in 1:nG2]
+    ψ2k = [ψ[2k] for k in 1:nG2]
+    ψ2km1 = [ψ[2k-1] for k in 1:nG2]
 
-figure(1)
-ftsize = 30
-rc("font", size=ftsize, serif="Computer Modern")
-rc("text", usetex=true)
-Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
-#  GGs = Gs[2:div(length(Gs)+1,2)]
-#  nG = length(GGs)
-subplot(121)
-title("\$ u_k \$")
-semilogy(Gs, (seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
-xlabel("\$ |k| \$")
-xlim(0,20)
-subplot(122)
-title("\$ \\log \\left( \\frac{|u_{k+1}|}{|u_{k}|} \\right) \$")
-plot(Gs[1:end-1], log.(abs.( seuil.(ψ[2:end]) ./ seuil.(ψ[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
-xlabel("\$ k \$")
-xlim(0,20)
+    subplot(2,2,(1,3))
+    title("\$ u_k \$")
+    semilogy((seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
+    xlabel("\$ |k| \$")
+    xlim(0,20)
 
-figure(2)
-plot(x, abs2.(ψr))
+    subplot(2,2,2)
+    title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k}|} \\right) \$", y=0.5, x=1.1)
+    plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2k))), "+", label="\$ \\varepsilon = $(ε) \$")
+    xlim(0,20)
+
+    subplot(2,2,4)
+    title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k-1}|} \\right) \$", y=0.5, x=1.1)
+    plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2km1))), "+", label="\$ \\varepsilon = $(ε) \$")
+    xlabel("\$ k \$")
+    xlim(0,20)
+
+    figure(2)
+    plot(x, abs2.(ψr), label="\$ \\varepsilon = $(ε) \$")
+#  end
