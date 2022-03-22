@@ -57,10 +57,12 @@ Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
 #  GGs = Gs[2:div(length(Gs)+1,2)]
 #  nG = length(GGs)
 subplot(121)
+title("\$ u_k \$")
 semilogy(Gs, (seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
 xlabel("\$ |k| \$")
 xlim(0,20)
 subplot(122)
+title("\$ \\log \\left( \\frac{|u_{k+1}|}{|u_{k}|} \\right) \$")
 plot(Gs[1:end-1], log.(abs.( seuil.(ψ[2:end]) ./ seuil.(ψ[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
 xlabel("\$ k \$")
 xlim(0,20)
