@@ -20,9 +20,8 @@ n_electrons = 1  # Increase this for fun
 #  seuil(x) = abs(x) < 1e-12 ? zero(x) : x
 seuil(x) = x
 
-#  for ε in [1]
+for ε in [0.1, 0.5, 1, 2]
 
-ε = 1
     println("---------------------------------")
     println("ε = $(ε)")
     terms = [Kinetic(2*ε),
@@ -35,7 +34,7 @@ seuil(x) = x
     Ecut = 10000000
     tol = 1e-28
     basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
-    scfres = self_consistent_field(basis; tol=tol, maxiter=200)# is_converged=DFTK.ScfConvergenceDensity(tol))
+    scfres = self_consistent_field(basis; tol=tol, maxiter=200, damping=0.5)# is_converged=DFTK.ScfConvergenceDensity(tol))
     println(scfres.energies)
 
     # ## Internals
@@ -54,7 +53,8 @@ seuil(x) = x
     ftsize = 20
     rc("font", size=ftsize, serif="Computer Modern")
     rc("text", usetex=true)
-    Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
+    Gs = [G[1] for G in G_vectors(basis, basis.kpoints[1])][:]
+    Gs = Gs[1:div(end,2)]
     nG = length(Gs)
     nG2 = div(nG,2) - 1
     ψ2kp1 = [ψ[2k+1] for k in 1:nG2]
@@ -63,21 +63,24 @@ seuil(x) = x
 
     subplot(2,2,(1,3))
     title("\$ u_k \$")
-    semilogy((seuil.(abs.(ψ))), "+", label="\$ \\varepsilon = $(ε) \$")
+    semilogy((seuil.(abs.(ψ[1:nG2]))), "+", label="\$ \\varepsilon = $(ε) \$")
     xlabel("\$ |k| \$")
     xlim(0,20)
+    legend()
 
     subplot(2,2,2)
-    title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k}|} \\right) \$", y=0.5, x=1.1)
+    title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k}|} \\right) \$", y=0.5, x=1.12)
     plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2k))), "+", label="\$ \\varepsilon = $(ε) \$")
     xlim(0,20)
+    legend()
 
     subplot(2,2,4)
-    title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k-1}|} \\right) \$", y=0.5, x=1.1)
+    title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k-1}|} \\right) \$", y=0.5, x=1.12)
     plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2km1))), "+", label="\$ \\varepsilon = $(ε) \$")
     xlabel("\$ k \$")
     xlim(0,20)
+    legend()
 
     figure(2)
     plot(x, abs2.(ψr), label="\$ \\varepsilon = $(ε) \$")
-#  end
+end
