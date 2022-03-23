@@ -50,7 +50,7 @@ for ε in [0.1, 0.5, 1, 2]
     ψr = G_to_r(basis, basis.kpoints[1], ψ)[:, 1, 1]
 
     figure(1)
-    ftsize = 20
+    ftsize = 30
     rc("font", size=ftsize, serif="Computer Modern")
     rc("text", usetex=true)
     Gs = [G[1] for G in G_vectors(basis, basis.kpoints[1])][:]
@@ -61,25 +61,24 @@ for ε in [0.1, 0.5, 1, 2]
     ψ2k = [ψ[2k] for k in 1:nG2]
     ψ2km1 = [ψ[2k-1] for k in 1:nG2]
 
-    subplot(2,2,(1,3))
     title("\$ u_k \$")
     semilogy((seuil.(abs.(ψ[1:nG2]))), "+", label="\$ \\varepsilon = $(ε) \$")
     xlabel("\$ |k| \$")
     xlim(0,20)
     legend()
 
-    subplot(2,2,2)
-    title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k}|} \\right) \$", y=0.5, x=1.12)
-    plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2k))), "+", label="\$ \\varepsilon = $(ε) \$")
-    xlim(0,20)
-    legend()
+    #  subplot(2,2,2)
+    #  title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k}|} \\right) \$", y=0.5, x=1.12)
+    #  plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2k))), "+", label="\$ \\varepsilon = $(ε) \$")
+    #  xlim(0,20)
+    #  legend()
 
-    subplot(2,2,4)
-    title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k-1}|} \\right) \$", y=0.5, x=1.12)
-    plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2km1))), "+", label="\$ \\varepsilon = $(ε) \$")
-    xlabel("\$ k \$")
-    xlim(0,20)
-    legend()
+    #  subplot(2,2,4)
+    #  title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k-1}|} \\right) \$", y=0.5, x=1.12)
+    #  plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2km1))), "+", label="\$ \\varepsilon = $(ε) \$")
+    #  xlabel("\$ k \$")
+    #  xlim(0,20)
+    #  legend()
 
     figure(2)
     plot(x, abs2.(ψr), label="\$ \\varepsilon = $(ε) \$")
