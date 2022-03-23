@@ -61,10 +61,8 @@ for ε in [0.1, 0.5, 1, 2]
     ψ2k = [ψ[2k] for k in 1:nG2]
     ψ2km1 = [ψ[2k-1] for k in 1:nG2]
 
-    title("\$ u_k \$")
     semilogy((seuil.(abs.(ψ[1:nG2]))), "+", label="\$ \\varepsilon = $(ε) \$")
     xlabel("\$ |k| \$")
-    xlim(0,20)
     legend()
 
     #  subplot(2,2,2)
