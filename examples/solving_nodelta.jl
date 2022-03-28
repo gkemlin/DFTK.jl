@@ -25,6 +25,7 @@ end
 
 # u0 is the real solution of u + u^3 = A*sin(x) on [0,2π]
 A = 10
+B = imag.(asin(sqrt(4/27)/A*im))
 function u0(x)
     cardan(A*sin(x))
 end
@@ -45,7 +46,7 @@ terms = [Kinetic()] # only used to create the basis, does not matter
 model = Model(lattice; terms=terms, n_electrons=1,
               spin_polarization=:spinless)  # use "spinless electrons"
 Ecut = 200000 # Fourier coefficients are well converged for this value of Ecut
-basis = PlaneWaveBasis(model, Ecut, kgrid=(1, 1, 1))
+basis = PlaneWaveBasis(model; Ecut, kgrid=(1, 1, 1))
 
 ### plotting Fourier coefficients and slopes
 
@@ -55,12 +56,12 @@ rc("font", size=ftsize, serif="Computer Modern")
 rc("text", usetex=true)
 
 # computing Fourier coefficients of u0
-subplot(122)
-u0r = ExternalFromReal(r->u0(r[1]))
-u0G = r_to_G(basis, basis.kpoints[1], ComplexF64.(u0r(basis).potential))[:,1]
-Gs = [abs(G[1]) for G in G_vectors_cart(basis.kpoints[1])][:]
-semilogy(Gs, (seuil.(abs.(u0G))), "+", label="\$ u_{0,k} \$")
-xlabel("\$ |k| \$", size=ftsize)
+#  subplot(122)
+#  u0r = ExternalFromReal(r->u0(r[1]))
+#  u0G = r_to_G(basis, basis.kpoints[1], ComplexF64.(u0r(basis).potential))[:,1]
+#  Gs = [abs(G[1]) for G in G_vectors_cart(basis.kpoints[1])][:]
+#  semilogy(Gs, (seuil.(abs.(u0G))), "+", label="\$ u_{0,k} \$")
+#  xlabel("\$ |k| \$", size=ftsize)
 
 # plot theoretical slope, that is the size of the band of the complex plane
 # on which u0 is analytic
@@ -71,16 +72,15 @@ xlabel("\$ |k| \$", size=ftsize)
 # /!\ note that asin(sqrt(4/27)/A*im) is imaginary as sqrt(4/27)/A*im is
 # ==> u0 is analytic on the band of the complex plane of all z with imaginary
 # part in absolute value < B
-B = imag.(asin(sqrt(4/27)/A*im))
-slope_B = [1 / (1000*sqrt(w(G[1],B))) for G in G_vectors_cart(basis.kpoints[1])]
-semilogy(Gs, (seuil.(abs.(slope_B))), "k-", label="\$ {\\rm theoretical\\ slope\\ } 1/\\sqrt{\\cosh(2B|k|)} \$, \$B = $(round(B, digits=4))\$")
-legend()
+#  slope_B = [1 / (1000*sqrt(w(G[1],B))) for G in G_vectors_cart(basis.kpoints[1])]
+#  semilogy(Gs, (seuil.(abs.(slope_B))), "k-", label="\$ {\\rm theoretical\\ slope\\ } 1/\\sqrt{\\cosh(2B|k|)} \$, \$B = $(round(B, digits=4))\$")
+#  legend()
 
-subplot(121)
-rs = range(-π, π, length=500)
-plot(rs, u0.(rs), label="\$ u_0 \$")
-xlabel("\$ x \$", size=ftsize)
-legend()
+#  subplot(121)
+#  rs = range(-π, π, length=500)
+#  plot(rs, u0.(rs), label="\$ u_0 \$")
+#  xlabel("\$ x \$", size=ftsize)
+#  legend()
 
 #  # compute slope with linear regression to compare with theoretical slope
 #  u0_slope = []
@@ -111,8 +111,10 @@ function plot_complex_function(rs, is, f)
     subplot(121)
     ux = imag.(res0)
     plot(is, ux, label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
-    plot([B, B], [minimum(ux), maximum(ux)], "r--", label="\$ \\rm branching\\ point\\ \$")
+    plot([B, B], [minimum(ux), maximum(ux)], "r--", label="\$ \\rm branching\\ points\\ \$")
     plot([-B, -B], [minimum(ux), maximum(ux)], "r--")
+    plot(is, [1/√3 for s in is], "k--", label="\$ \\pm 1 / \\sqrt{3} \$")
+    plot(is, [-1/√3 for s in is], "k--")
     xlabel("\$ y \$", size=ftsize)
     ylabel(" ", size=ftsize)
     legend()
