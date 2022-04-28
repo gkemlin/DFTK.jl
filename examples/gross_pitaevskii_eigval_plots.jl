@@ -3,14 +3,15 @@ using DFTK
 using LinearAlgebra
 using DoubleFloats
 using GenericLinearAlgebra
+using SpecialFunctions
 
 ## solve 1D GP eigenvalue problem
 
 a = 2π
 lattice = a * [[1 0 0.]; [0 0 0]; [0 0 0]]
 
-V(r) = cos(r)
-C = 10
+V(r) = erf(1000*cos(r))
+C = 50
 α = 2
 
 n_electrons = 1  # Increase this for fun
@@ -20,7 +21,7 @@ n_electrons = 1  # Increase this for fun
 #  seuil(x) = abs(x) < 1e-12 ? zero(x) : x
 seuil(x) = x
 
-for ε in [0.1, 0.5, 1, 2]
+for ε in [0.1, 5]
 
     println("---------------------------------")
     println("ε = $(ε)")
@@ -28,13 +29,14 @@ for ε in [0.1, 0.5, 1, 2]
              ExternalFromReal(r -> V(r[1])),
              PowerNonlinearity(C, α),
             ]
-    model = Model(Array{Double64}(lattice); n_electrons=n_electrons, terms=terms,
+    model = Model(Array{Float64}(lattice); n_electrons=n_electrons, terms=terms,
                   spin_polarization=:spinless)  # use "spinless electrons"
 
     Ecut = 10000000
-    tol = 1e-28
+    tol = 1e-12
     basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
-    scfres = self_consistent_field(basis; tol=tol, maxiter=200, damping=0.5)# is_converged=DFTK.ScfConvergenceDensity(tol))
+    scfres = self_consistent_field(basis; tol=tol, maxiter=200, damping=0.1,
+                                   is_converged=DFTK.ScfConvergenceDensity(tol))
     println(scfres.energies)
 
     # ## Internals
@@ -53,31 +55,27 @@ for ε in [0.1, 0.5, 1, 2]
     ftsize = 30
     rc("font", size=ftsize, serif="Computer Modern")
     rc("text", usetex=true)
-    Gs = [G[1] for G in G_vectors(basis, basis.kpoints[1])][:]
-    Gs = Gs[1:div(end,2)]
-    nG = length(Gs)
-    nG2 = div(nG,2) - 1
-    ψ2kp1 = [ψ[2k+1] for k in 1:nG2]
-    ψ2k = [ψ[2k] for k in 1:nG2]
-    ψ2km1 = [ψ[2k-1] for k in 1:nG2]
-
-    semilogy((seuil.(abs.(ψ[1:nG2]))), "+", label="\$ \\varepsilon = $(ε) \$")
-    xlabel("\$ |k| \$")
+    Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
+    GGs = Gs[2:div(length(Gs)+1,2)]
+    nG = length(GGs)
+    ψG = [ψ[2k] for k =1:div(nG,2)]
+    GGGs = [GGs[2k] for k =1:div(nG,2)]
+    ψGn = ψG[2:end]
+    subplot(121)
+    semilogy(GGGs, (seuil.(abs.(ψG))), "+", label="\$ \\varepsilon = $(ε) \$")
     legend()
-
-    #  subplot(2,2,2)
-    #  title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k}|} \\right) \$", y=0.5, x=1.12)
-    #  plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2k))), "+", label="\$ \\varepsilon = $(ε) \$")
-    #  xlim(0,20)
-    #  legend()
-
-    #  subplot(2,2,4)
-    #  title("\$ \\log \\left( \\frac{|u_{2k+1}|}{|u_{2k-1}|} \\right) \$", y=0.5, x=1.12)
-    #  plot(log.(abs.( seuil.(ψ2kp1) ./ seuil.(ψ2km1))), "+", label="\$ \\varepsilon = $(ε) \$")
-    #  xlabel("\$ k \$")
-    #  xlim(0,20)
-    #  legend()
+    subplot(122)
+    plot(GGGs[2:end], log.(abs.( seuil.(ψGn) ./ seuil.(ψG[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
+    function u(z)
+        φ = zero(ComplexF64)
+        for (iG, G) in  enumerate(G_vectors(basis, basis.kpoints[1]))
+            φ += seuil(ψ[iG]) * e(G, z, basis)
+        end
+        return φ
+    end
+    legend()
 
     figure(2)
     plot(x, abs2.(ψr), label="\$ \\varepsilon = $(ε) \$")
+    legend()
 end
