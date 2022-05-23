@@ -95,7 +95,7 @@ for ε in ε_list
     tol = 1e-15
     global basis
     basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
-    scfres = DFTK.custom_direct_minimization(basis, source_term; tol=tol)
+    scfres = self_consistent_field(basis; tol=tol)
     println(scfres.energies)
 
     # ## Internals
@@ -144,6 +144,8 @@ for ε in ε_list
         subplot(121)
         is = range(-0.1, 0.1, length=200)
         plot(x, real.(ψr), label="\$ \\varepsilon = $(ε) \$")
+        figure(3)
+        semilogy(GGGs, (seuil.(abs.(ψG))), "+", label="\$ \\varepsilon = $(ε) \$")
     end
 
     #  if ε == 1e-5
@@ -155,6 +157,10 @@ for ε in ε_list
     #  end
 
 end
+
+figure(3)
+xlabel("\$ |k| \$")
+legend()
 
 figure(2)
 subplot(121)
