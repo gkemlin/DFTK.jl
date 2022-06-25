@@ -1,0 +1,152 @@
+using PyPlot
+using DFTK
+using LinearAlgebra
+using SpecialFunctions
+
+# custom V from computations to have poles
+λ0 = 1 / (2π)
+β = 1.000001
+@assert β > 1
+γ = λ0 / β
+V(x) = γ * cos(x)
+
+# u0 is the real solution of Vu + u^3 = λ0u on [0,2π]
+function u0(x)
+    √(λ0 - V(x))
+end
+
+# branching point
+B = log(β + √(β^2-1))
+
+figure(1)
+ftsize = 30
+rc("font", size=ftsize, serif="Computer Modern")
+rc("text", usetex=true)
+is = range(-1.5*B, 1.5*B, 1000)
+fr(z) = real(u0(z))
+fi(z) = imag(u0(z))
+f(z)  = u0(z)
+plot(is, fr.((1im).*is))
+plot(is, fi.((1im).*is))
+
+save0 = true
+
+## solve for ε  > 0
+a = 2π
+lattice = a * [[1 0 0.]; [0 0 0]; [0 0 0]]
+
+C = 1/2
+α = 2
+
+n_electrons = 1  # Increase this for fun
+
+ε_list = [0, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+x = nothing
+basis = nothing
+
+# basis function
+function e(G, z, basis)
+    exp(G[1] * z * im) / sqrt(basis.model.unit_cell_volume)
+end
+
+# cut function
+seuil(x) = abs(x) > 1e-10 ? x : 0.0
+#  seuil(x) = x
+
+for ε in ε_list
+
+    println("---------------------------------")
+    println("ε = $(ε)")
+    terms = [Kinetic(2*ε),
+             ExternalFromReal(r -> V(r[1])),
+             PowerNonlinearity(C, α),
+            ]
+    model = Model(lattice; n_electrons, terms,
+                  spin_polarization=:spinless)  # use "spinless electrons"
+
+    Ecut = 100000000
+    tol = -1
+    global basis
+    basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
+    u0r = ExternalFromReal(r->u0(r[1]))
+    u0G = DFTK.r_to_G(basis, basis.kpoints[1], ComplexF64.(u0r(basis).potential_values))[:,1]
+    ψ0 = [reshape(u0G, length(u0G), 1)]
+    ρ0 = compute_density(basis, ψ0, [[2.0]])
+    scfres = direct_minimization(basis, ψ0; tol)
+    #= scfres = self_consistent_field(basis; damping=0.01, maxiter=1000,
+                                   #  mixing=KerkerMixing(),
+                                   ρ = ρ0,
+                                   is_converged=DFTK.ScfConvergenceDensity(tol)) =#
+    println(scfres.energies)
+
+    # ## Internals
+    # We use the opportunity to explore some of DFTK internals.
+    #
+    # Extract the converged density and the obtained wave function:
+    ρ = real(scfres.ρ)[:, 1, 1, 1]  # converged density, first spin component
+    ψ = scfres.ψ[1][:, 1];    # first kpoint, all G components, first eigenvector
+
+    # plots
+    global x
+    x = a * vec(first.(DFTK.r_vectors(basis)))
+    ψr = G_to_r(basis, basis.kpoints[1], ψ)[:, 1, 1]
+
+    figure(2)
+    if save0
+        plot(x, u0.(x), label="\$ \\varepsilon = 0 \$")
+    end
+    plot(x, real.(ψr), label="\$ \\varepsilon = $(ε) \$")
+
+    figure(3)
+    Gs = [abs(G[1]) for G in G_vectors(basis, basis.kpoints[1])][:]
+    nG = length(Gs)
+    ψG = [ψ[k] for k=1:nG]
+    ψGn = [ψ[k+1] for k=1:(nG-1)]
+    #  GGs = Gs[2:div(length(Gs)+1,2)]
+    #  nG = length(GGs)
+    #  ψG = [ψ[2*k] for k =1:div(nG,2)]
+    #  GGGs = [GGs[2*k] for k =1:div(nG,2)]
+    #  ψGn = ψG[2:end]
+    global save0
+    if save0
+        # plot fourier
+        #  subplot(121)
+        semilogy(Gs, (seuil.(abs.(u0G))), "+", label="\$ \\varepsilon = 0 \$")
+        #  subplot(122)
+        #  u0Gn = [u0G[k+1] for k=1:(nG-1)]
+        #  plot(Gs[2:end], log.(abs.( seuil.(u0Gn) ./ seuil.(u0G[1:end-1] ))), "+", label="\$ \\varepsilon = 0 \$")
+        save0 = false
+    end
+    #  subplot(121)
+    semilogy(Gs, (seuil.(abs.(ψG))), "+", label="\$ \\varepsilon = $(ε) \$")
+    #  subplot(122)
+    #  plot(Gs[2:end], log.(abs.( seuil.(ψGn) ./ seuil.(ψG[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
+
+    println(λ0)
+    println(scfres.eigenvalues[1][1])
+    println(abs(λ0 - scfres.eigenvalues[1][1]))
+
+
+    #  function u(z)
+    #      φ = zero(ComplexF64)
+    #      for (iG, G) in  enumerate(G_vectors(basis, basis.kpoints[1]))
+    #          φ += seuil(ψ[iG]) * e(G, z, basis)
+    #      end
+    #      return φ
+    #  end
+    #  figure(1)
+    #  plot(is, real.(u.(is .* im)), label="\$ \\varepsilon = $(ε) \$")
+end
+
+figure(1)
+legend()
+
+figure(2)
+legend()
+
+figure(3)
+#  subplot(121)
+xlabel("\$ |k| \$")
+legend()
+#  subplot(122)
+#  xlabel("\$ |k| \$")
