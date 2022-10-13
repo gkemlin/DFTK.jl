@@ -2,7 +2,6 @@ using PyPlot
 using DFTK
 using LinearAlgebra
 using SpecialFunctions
-using DoubleFloats
 using GenericLinearAlgebra
 
 include("./plotting_analytic.jl")
@@ -12,7 +11,7 @@ C = 1/2
 α = 2
 
 λ0 = α * C / (2π)
-β = 1 + 1e-6
+β = 1 + 1e-4
 γ = λ0 / β
 V(x) = γ * cos(x)
 
@@ -24,7 +23,7 @@ function sqrt_cplx(z)
     √r * exp(Θ/2*1im)
 end
 
-# u0 is the real solution of Vu + u^3 = λ0u on [0,2π]
+# u0 is the real solution of Vu + αC * u^3 = λ0u on [0,2π]
 function u0(x)
     sqrt_cplx(λ0 - V(x)) / √(α*C)
 end
@@ -60,7 +59,7 @@ lattice = a * [[1 0 0.]; [0 0 0]; [0 0 0]]
 
 n_electrons = 1  # Increase this for fun
 
-ε_list = [1e-8, 1e-6, 1e-4, 1e-2, 1e-1, 1]
+ε_list = [1e-7, 1e-5, 1e-3, 1e-1]
 x = nothing
 basis = nothing
 
@@ -70,7 +69,7 @@ function e(G, z, basis)
 end
 
 # cut function
-tol = 1e-15
+tol = 1e-14
 seuil(x) = abs(x) > tol ? x : 0.0
 #  seuil(x) = x
 
@@ -117,25 +116,24 @@ for ε in ε_list
     nG = length(Gs)
     ψG = [ψ[k] for k=1:nG]
     ψGn = [ψ[k+1] for k=1:(nG-1)]
-    #  GGs = Gs[2:div(length(Gs)+1,2)]
-    #  nG = length(GGs)
-    #  ψG = [ψ[2*k] for k =1:div(nG,2)]
-    #  GGGs = [GGs[2*k] for k =1:div(nG,2)]
-    #  ψGn = ψG[2:end]
     global save0
     if save0
         # plot fourier
-        #  subplot(121)
+        subplot(121)
         semilogy(Gs, (seuil.(abs.(u0G))), "+", label="\$ \\varepsilon = 0 \$")
-        #  subplot(122)
-        #  u0Gn = [u0G[k+1] for k=1:(nG-1)]
-        #  plot(Gs[2:end], log.(abs.( seuil.(u0Gn) ./ seuil.(u0G[1:end-1] ))), "+", label="\$ \\varepsilon = 0 \$")
+        semilogy(Gs, 1e-2 ./ sqrt.(abs.(Gs).^3 .* cosh.(2B .* abs.(Gs))), "--",
+                 label="\$ 1/(|k|^{3/2} \\sqrt{\\cosh(2Bk)}) \$")
+        subplot(122)
+        u0Gn = [u0G[k+1] for k=1:(nG-1)]
+        plot(Gs[2:end], log.(abs.( seuil.(u0Gn) ./ seuil.(u0G[1:end-1] ))), "+", label="\$ \\varepsilon = 0 \$")
+        plot(Gs[2:end], [-B for k in Gs[2:end]], "--", label="\$ -B \$")
+        plot(Gs[2:end], [B for k in Gs[2:end]], "--", label="\$ +B \$")
         save0 = false
     end
-    #  subplot(121)
+    subplot(121)
     semilogy(Gs, (seuil.(abs.(ψG))), "+", label="\$ \\varepsilon = $(ε) \$")
-    #  subplot(122)
-    #  plot(Gs[2:end], log.(abs.( seuil.(ψGn) ./ seuil.(ψG[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
+    subplot(122)
+    plot(Gs[2:end], log.(abs.( seuil.(ψGn) ./ seuil.(ψG[1:end-1] ))), "+", label="\$ \\varepsilon = $(ε) \$")
 
     println(λ0)
     println(scfres.eigenvalues[1][1]*ε)
@@ -161,8 +159,9 @@ figure(3)
 legend()
 
 figure(4)
-#  subplot(121)
+subplot(121)
 xlabel("\$ |k| \$")
 legend()
-#  subplot(122)
-#  xlabel("\$ |k| \$")
+subplot(122)
+xlabel("\$ |k| \$")
+legend()
