@@ -4,9 +4,9 @@ using PyPlot
 
 function plot_complex_function(rs, is, f; cmap_color="periodic")
     res = f isa Function ? [f(x + im*y) for x in rs, y in is] : f
-    subplot(121)
-    contour(rs, is, abs.(res)', levels=10)
-    colorbar()
+    #  subplot(121)
+    #  contour(rs, is, abs.(res)', levels=10)
+    #  colorbar()
     subplot(122)
     if cmap_color == "periodic"
         pcolormesh(rs, is, angle.(res)', cmap="hsv")

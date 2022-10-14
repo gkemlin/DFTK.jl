@@ -2,7 +2,6 @@ using PyPlot
 using DFTK
 using LinearAlgebra
 using SpecialFunctions
-using GenericLinearAlgebra
 
 include("./plotting_analytic.jl")
 
@@ -36,17 +35,17 @@ ftsize = 30
 rc("font", size=ftsize, serif="Computer Modern")
 rc("text", usetex=true)
 Is = range(-1.2*B, 1.2*B, 10000)
-is = range(-2*B, 2*B, 400)
-rs = range(-0.0001, 0.0001, 400)
+is = range(-2*B, 2*B, 200)
+rs = range(-0.01, 0.01, 200)
 fr(z) = real(u0(z))
 fi(z) = imag(u0(z))
 f(z)  = u0(z)
-plot(Is, fr.((1im).*Is))
-plot(Is, fi.((1im).*Is))
-plot(B, 0, "ro")
+subplot(121)
+plot(Is, fr.((1im).*Is), label="\$ {\\rm \\Re}({\\rm i} y) \$")
+plot(Is, fi.((1im).*Is), label="\$ {\\rm \\Im}({\\rm i} y) \$")
+plot(B, 0, "ro", label="\$ B_0 \$")
 plot(-B, 0, "ro")
 
-figure(2)
 plot_complex_function(rs, is, f; cmap_color="")
 plot(0, B, "ro")
 plot(0, -B, "ro")
@@ -70,7 +69,7 @@ end
 
 # cut function
 Ecut = 100000000
-tol = 1e-10
+tol = 1e-14
 seuil(x) = abs(x) > tol ? x : 0.0
 #  seuil(x) = x
 
@@ -127,7 +126,7 @@ for ε in ε_list
         u0Gn = [u0G[k+1] for k=1:(nG-1)]
         plot(Gs[2:end], log.(abs.( seuil.(u0Gn) ./ seuil.(u0G[1:end-1] ))), "+", label="\$ \\varepsilon = 0 \$")
         plot(Gs[2:end], [-B for k in Gs[2:end]], "--", label="\$ -B \$")
-        plot(Gs[2:end], [B for k in Gs[2:end]], "--", label="\$ +B \$")
+        #  plot(Gs[2:end], [B for k in Gs[2:end]], "--", label="\$ +B \$")
         save0 = false
     end
     subplot(121)
@@ -152,10 +151,12 @@ for ε in ε_list
 end
 
 figure(1)
+subplot(121)
+xlabel("\$ y\$")
+subplot(122)
+xlabel("\$ x\$")
+ylabel("\$ y\$")
 savefig("u01_iy.pdf")
-
-figure(2)
-savefig("u01_z.pdf")
 
 figure(3)
 legend()
@@ -171,5 +172,5 @@ subplot(122)
 xlabel("\$ |k| \$")
 legend()
 xlim(-50, 1500)
-ylim(-0.2, 0.2)
+ylim(-0.1, 0)
 savefig("u_fourier_$(Ecut)_$(tol).pdf")
