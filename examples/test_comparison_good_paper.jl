@@ -50,7 +50,6 @@ model = Model(lattice; n_electrons=n_electrons, terms=terms,
 
 Ecut = 1000000
 tol = 1e-15
-global basis
 basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
 scfres = DFTK.custom_direct_minimization(basis, source_term; tol=tol)
 println(scfres.energies)
@@ -73,9 +72,7 @@ du(x) = ForwardDiff.derivative(y -> real(u(y)), x)
 
 
 # EDO
-#  g(X,t,ε) = [X[2]; (X[1]^3)/ε]
 g(X,t,ε) = [X[2]; (X[1]^3 - X[1])/ε]
-#  g(X,t,ε) = [X[2]; (A*sinh(t) - X[1])/ε]
 f(X,t,ε) = [X[2]; (A*sinh(t) + X[1]^3 - X[1])/ε]
 
 T = B+2
@@ -109,13 +106,11 @@ title("\$ \\varepsilon = $(ε)\\ \\mu = $(A) \$")
 ylim(-0.1,4)
 xlim(0,2)
 xlabel("\$ y \$")
-legend()
-println(prod(ψ0 .≥ LXd))
 
 # computable lower bound
 yid1 = findfirst(y->y>=1.5, LXd)
 η1 = LXd[yid1] - 1
-η1f = @sprintf("%.2f", η1)
+η1f = @sprintf("%.1f", η1)
 y01 = Lt[yid1]
 Y01 = [LXd[yid1]; LdXd[yid1]]
 Y1 = copy(Y01)
@@ -132,5 +127,6 @@ w(y, y0, η) = (1 + 2/η + exp((y-y0)/sqrt(ε/2))) / (1 + 2/η - exp((y-y0)/sqrt
 
 plot(y01 .+ Lt, [w(y, y01, η1) for y in y01 .+ Lt],
      "+-", label="\$ \\xi_\\varepsilon(y)\\ \\eta = $(η1f) \$"; markevery=30, ms=10)
+legend()
 println("limit  $(√(ε/2)*log(1 + 2/η1)+y01))")
 

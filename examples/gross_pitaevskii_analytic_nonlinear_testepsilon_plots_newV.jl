@@ -35,9 +35,9 @@ figure(1)
 ftsize = 30
 rc("font", size=ftsize, serif="Computer Modern")
 rc("text", usetex=true)
-Is = range(-1.2*B, 1.2*B, 100000)
-is = range(-2*B, 2*B, 1500)
-rs = range(-0.0001, 0.0001, 1500)
+Is = range(-1.2*B, 1.2*B, 10000)
+is = range(-2*B, 2*B, 400)
+rs = range(-0.0001, 0.0001, 400)
 fr(z) = real(u0(z))
 fi(z) = imag(u0(z))
 f(z)  = u0(z)
@@ -69,7 +69,8 @@ function e(G, z, basis)
 end
 
 # cut function
-tol = 1e-14
+Ecut = 100000000
+tol = 1e-10
 seuil(x) = abs(x) > tol ? x : 0.0
 #  seuil(x) = x
 
@@ -84,7 +85,6 @@ for ε in ε_list
     model = Model(lattice; n_electrons, terms,
                   spin_polarization=:spinless)  # use "spinless electrons"
 
-    Ecut = 10000000
     global basis
     basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
     u0r = ExternalFromReal(r->u0(r[1]))
@@ -152,16 +152,24 @@ for ε in ε_list
 end
 
 figure(1)
+savefig("u01_iy.pdf")
 
 figure(2)
+savefig("u01_z.pdf")
 
 figure(3)
 legend()
+savefig("u_r_$(Ecut)_$(tol).pdf")
 
 figure(4)
 subplot(121)
 xlabel("\$ |k| \$")
+xlim(-50, 1500)
+ylim(1e-15, 1)
 legend()
 subplot(122)
 xlabel("\$ |k| \$")
 legend()
+xlim(-50, 1500)
+ylim(-0.2, 0.2)
+savefig("u_fourier_$(Ecut)_$(tol).pdf")
