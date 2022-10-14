@@ -122,11 +122,11 @@ for ε in ε_list
         subplot(121)
         semilogy(Gs, (seuil.(abs.(u0G))), "+", label="\$ \\varepsilon = 0 \$")
         semilogy(Gs, 1e-2 ./ sqrt.(abs.(Gs).^3 .* cosh.(2B .* abs.(Gs))), "--",
-                 label="\$ 1/(|k|^{3/2} \\sqrt{\\cosh(2Bk)}) \$")
+                 label="\$ 1/(|k|^{3/2} \\sqrt{\\cosh(2B_0k)}) \$")
         subplot(122)
         u0Gn = [u0G[k+1] for k=1:(nG-1)]
         plot(Gs[2:end], log.(abs.( seuil.(u0Gn) ./ seuil.(u0G[1:end-1] ))), "+", label="\$ \\varepsilon = 0 \$")
-        plot(Gs[2:end], [-B for k in Gs[2:end]], "--", label="\$ -B \$")
+        plot(Gs[2:end], [-B for k in Gs[2:end]], "--", label="\$ -B_0 \$")
         #  plot(Gs[2:end], [B for k in Gs[2:end]], "--", label="\$ +B \$")
         save0 = false
     end
