@@ -30,7 +30,7 @@ end
 # branching point
 B = log(β + √(β^2-1))
 
-figure(1)
+figure(1, figsize=(22,12))
 ftsize = 30
 rc("font", size=ftsize, serif="Computer Modern")
 rc("text", usetex=true)
@@ -41,8 +41,9 @@ fr(z) = real(u0(z))
 fi(z) = imag(u0(z))
 f(z)  = u0(z)
 subplot(121)
-plot(Is, fr.((1im).*Is), label="\$ {\\rm Re}({\\rm i} y) \$")
-plot(Is, fi.((1im).*Is), label="\$ {\\rm Im}({\\rm i} y) \$")
+plot(Is, fr.((1im).*Is), label="\$ {\\rm Re}(u_0({\\rm i} y)) \$")
+plot(Is, fi.((1im).*Is), label="\$ {\\rm Im}(u_0({\\rm i} y)) \$")
+xlabel("\$ y \$")
 plot(B, 0, "ro", label="\$ \\pm B_0 \$")
 plot(-B, 0, "ro")
 legend()
@@ -50,6 +51,11 @@ legend()
 plot_complex_function(rs, is, f; cmap_color="")
 plot(0, B, "ro")
 plot(0, -B, "ro")
+xlabel("\$ x \$")
+ylabel("\$ y \$")
+savefig("u01_iy.pdf")
+STOP
+
 
 save0 = true
 
@@ -150,15 +156,6 @@ for ε in ε_list
     #  figure(1)
     #  plot(is, real.(u.(is .* im)), label="\$ \\varepsilon = $(ε) \$")
 end
-
-figure(1)
-subplot(121)
-xlabel("\$ y\$")
-legend()
-subplot(122)
-xlabel("\$ x\$")
-ylabel("\$ y\$")
-savefig("u01_iy.pdf")
 
 figure(3)
 legend()
