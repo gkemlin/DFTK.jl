@@ -54,7 +54,6 @@ plot(0, -B, "ro")
 xlabel("\$ x \$")
 ylabel("\$ y \$")
 savefig("u01_iy.pdf")
-STOP
 
 
 save0 = true
@@ -133,6 +132,10 @@ for ε in ε_list
         u0Gn = [u0G[k+1] for k=1:(nG-1)]
         plot(Gs[2:end], log.(abs.( seuil.(u0Gn) ./ seuil.(u0G[1:end-1] ))), "+", label="\$ \\varepsilon = 0 \$")
         plot(Gs[2:end], [-B for k in Gs[2:end]], "--", label="\$ -B_0 \$")
+        plot(Gs[2:end], log.(sqrt.(abs.(Gs[1:end-1]).^3 .* cosh.(2B .* abs.(Gs[1:end-1]))) ./ sqrt.(abs.(Gs[2:end]).^3 .* cosh.(2B .* abs.(Gs[2:end])))), "--",
+             label="\$ 1/(|k|^{3/2} \\sqrt{\\cosh(2B_0k)}) \$")
+        plot(Gs[2:end], log.(sqrt.(abs.(Gs[2:end]).^3 .* cosh.(2B .* abs.(Gs[2:end]))) ./ sqrt.(abs.(Gs[1:end-1]).^3 .* cosh.(2B .* abs.(Gs[1:end-1])))), "--",
+             label="\$ 1/(|k|^{3/2} \\sqrt{\\cosh(2B_0k)}) \$")
         #  plot(Gs[2:end], [B for k in Gs[2:end]], "--", label="\$ +B \$")
         save0 = false
     end
@@ -170,6 +173,6 @@ legend()
 subplot(122)
 xlabel("\$ |k| \$")
 legend()
-xlim(-50, 1500)
-ylim(-0.1, 0)
+#  xlim(-50, 1500)
+#  ylim(-0.1, 0)
 savefig("u_fourier_$(Ecut)_$(tol).pdf")
